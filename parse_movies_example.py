@@ -1,5 +1,7 @@
 import gzip
 import re
+
+
 def load_all_movies(filename):
     """
     Load and parse 'plot.list.gz'. Yields each consecutive movie as a dictionary:
@@ -39,7 +41,7 @@ def load_all_movies(filename):
     print "Skipped",skipped
 
 
-all_movies = list(load_all_movies("/home/michael/tmp/plot.list.gz"))
+#all_movies = list(load_all_movies(FILE_NAME))
 
-len(all_movies)
+#len(all_movies)
 # => 379451
