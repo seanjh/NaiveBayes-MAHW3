@@ -1,6 +1,7 @@
 import gzip
 import re
 from config import FILE_NAME
+movie_regexp = re.compile("MV: ((.*?) \(([0-9]+).*\)(.*))")
 
 
 def load_all_movies(filename):
@@ -15,7 +16,7 @@ def load_all_movies(filename):
     """
     assert "plot.list.gz" in filename # Or whatever you called it
     current_movie = None
-    movie_regexp = re.compile("MV: ((.*?) \(([0-9]+).*\)(.*))")
+
     skipped = 0
     for line in gzip.open(filename):
         if line.startswith("MV"):

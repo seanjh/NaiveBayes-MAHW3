@@ -1,6 +1,7 @@
+from __future__ import division
 from collections import namedtuple
 from multiprocessing import Pool
-from math import log
+import math
 import string
 
 import nltk
@@ -8,8 +9,9 @@ from nltk.corpus import stopwords
 
 import parse_movies_example as pme
 from config import FILE_NAME
+import naive_bayes as nb
 
-BASE_LOG_PROBABILITY = log(0.0001)
+BASE_LOG_PROBABILITY = math.log(0.0001)
 STOP_WORDS = frozenset(stopwords.words('english'))
 PUNCTUATION = frozenset(string.punctuation)
 MovieResult = namedtuple('MovieResult', 'year, wordcounts')
@@ -18,7 +20,6 @@ MovieResult = namedtuple('MovieResult', 'year, wordcounts')
 def tokenize(plot):
     raw_tokens = [''.join(ch for ch in token if ch not in PUNCTUATION).lower() for token in
                   nltk.word_tokenize(plot.decode('utf_8', errors='ignore'))]
-    #return [token for token in raw_tokens if token not in STOP_WORDS]
     return raw_tokens
 
 
@@ -53,39 +54,22 @@ def get_movie_features(movies):
     results = process_plots_mp(movies)
     word_counts = dict()
     for movie in results:
-        #word_set = word_set.union(movie.wordcounts.items())
         add_plot_counts(word_counts.setdefault(movie.year, dict()), movie.wordcounts)
     return word_counts
 
 
-def calculate_cond_prob(movie_features):
-    word_probs = dict()
-    word_set = get_full_feature_set(movie_features)
-    for decade in movie_features.keys():
-        word_probs[decade] = calculate_decade_cond_probs(movie_features.get(decade), word_set)
-    return word_probs
+def get_training_classifier(movie_features):
+    return {decade: calculate_decade_cond_probs(movie_features.get(decade))
+            for (decade, features) in movie_features.iteritems()}
 
 
-def get_full_feature_set(movie_features):
-    word_set = set()
-    for decade in movie_features.keys():
-        word_set = word_set.union(movie_features.get(decade).keys())
-    return word_set
-
-
-def calculate_decade_cond_probs(decade_features, word_set):
-    decade_word_probs = dict()
+def calculate_decade_cond_probs(decade_features):
     total_wordcount = sum([v for k, v in decade_features.iteritems()])
-    for word in word_set:
-        if decade_features.get(word) is None:
-            decade_word_probs[word] = BASE_LOG_PROBABILITY
-        else:
-            decade_word_probs[word] = log(decade_features.get(word) / total_wordcount)
-    return decade_word_probs
+    return {word: math.log(count/total_wordcount) for (word, count) in decade_features.iteritems()}
 
 
-def print_top_features(word_counts, num):
-    for year, words in word_counts.iteritems():
+def print_top_features(features, num):
+    for year, words in features.iteritems():
         ordered = sorted(words.items(), key=lambda t: t[1], reverse=True)
         print 'Decade %s' % str(year)
         for word in ordered[:num]:
@@ -93,9 +77,11 @@ def print_top_features(word_counts, num):
 
 
 def main():
-    movies = pme.load_all_movies(FILE_NAME)
-    features = get_movie_features(movies)
-    print_top_features(features, 10)
+    movies = list(pme.load_all_movies(FILE_NAME))
+    balanced = nb.balance_dataset(movies, 100)
+    features = get_movie_features(balanced)
+    classifier = get_training_classifier(features)
+    print classifier
 
 
 if __name__ == '__main__':
