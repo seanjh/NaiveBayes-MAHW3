@@ -9,7 +9,8 @@ import matplotlib.pyplot as pyp
 import random
 import math
 import process_plots as pp
-import process_plots_2 as pp2
+import datetime as dt
+# import process_plots_2 as pp2
 
 # constants
 BINARY = True
@@ -175,7 +176,7 @@ def rank_classification(test_movies, list_of_decade_unigrams):
         # if guessed_decade == actual_decade:
         #     correct_classification += 1
 
-        print(str(count_movies) + " out of " + str(len(test_movies)))
+        # print(str(count_movies) + " out of " + str(len(test_movies)))
         count_movies += 1
 
         pairs_of_guesses_and_actuals.append((guessed_decade, actual_decade, location_of_correct_answer))
@@ -190,7 +191,7 @@ def rank_classification_2(test_movies, list_of_decade_features):
     pairs_of_guesses_and_actuals = list([])
 
     for test_movie in test_movies:
-        guessed_decade = naive_bayes(test_movie, 'all', list_of_decade_features)
+        guessed_decade = naive_bayes_2(test_movie, 'all', list_of_decade_features)
         actual_decade = test_movie['year']
 
         guessed_decade = sorted(guessed_decade, key=lambda tup: tup[1], reverse=True)
@@ -240,6 +241,9 @@ def naive_bayes_2(movie, return_type, list_of_decade_features):
 
     summary_words = pp.process_one_plot(movie)[1]
 
+    # print(pp.process_one_plot(movie)[1])
+    # print(pp.process_one_plot(movie)[1].get(u'the'))
+
     decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
     drichlet_prior = math.log10(0.000001)
 
@@ -250,11 +254,12 @@ def naive_bayes_2(movie, return_type, list_of_decade_features):
         # print('NB in decade ' + str(decade))
         sum_log_likelihood = 0
         # decade_unigram = list_of_decade_features[(decade - 1930) / 10][1]
-        for word in summary_words[1].keys():
-            word_likelihood = list_of_decade_features[decade][word]
-            sum_log_likelihood += word_likelihood
-        else:
-            sum_log_likelihood += drichlet_prior
+        for word in summary_words.keys():
+            word_likelihood = list_of_decade_features[decade].get(word)
+            if word_likelihood is not None:
+                sum_log_likelihood += word_likelihood
+            else:
+                sum_log_likelihood += drichlet_prior
 
 
         # print(decade_value_pair)
@@ -281,13 +286,13 @@ def main():
     # plot_pmf('beaver', movies)
     # plot_pmf('the', movies)
 
-    balanced_movies = balance_dataset(movies, 100)
+    balanced_movies = balance_dataset(movies, 6000)
     print('finish balancing movies')
 
     # print(pp.process_plots_mp(balanced_movies)[0])
     # print(pp.process_plots_mp(balanced_movies)[1])
 
-    print(pp2.get_movie_features(balanced_movies)[1930])
+    # print(pp.get_training_classifier(pp.get_movie_features(balanced_movies))[1930])
     # plot_pmf('radio', balanced_movies)
     # plot_pmf('beaver', balanced_movies)
     # plot_pmf('the', balanced_movies)
@@ -305,7 +310,7 @@ def main():
 
     print('finish splitting training/test movies')
 
-    list_of_decade_features = pp2.get_movie_features(balanced_movies)
+    list_of_decade_features = pp.get_movie_features(training_movies)
 
     print('finish getting all decade unigrams from process plots')
 
@@ -315,6 +320,9 @@ def main():
         list_of_decade_unigrams.append(decade_unigram)
 
     print('finish getting all decade unigrams')
+
+    # print(list_of_decade_features[1930])
+    # print(list_of_decade_unigrams[0])
 
     # plot_movie_classification("Finding Nemo", movies, list_of_decade_unigrams)
     # plot_movie_classification("The Matrix", movies, list_of_decade_unigrams)
@@ -327,16 +335,19 @@ def main():
     # print("The Naive-Bayes Classification correctly classifies " + str(correct_classification) + " out of " +
     #       str(len(test_movies)))
 
-    classification_result = rank_classification(test_movies, list_of_decade_unigrams)
-    guess_number = [x[2] for x in classification_result]
+    # print(dt.datetime.now())
+    # classification_result = rank_classification(test_movies, list_of_decade_unigrams)
+    # guess_number = [x[2] for x in classification_result]
+    #
+    # guesses_dict = dict((i, guess_number.count(i)) for i in guess_number)
+    # guesses_dict[9] = 0
+    #
+    # print("The Naive-Bayes Classification correctly classifies " + str(guesses_dict[0]) + " out of " +
+    #       str(len(test_movies)))
+    #
+    # print(guesses_dict)
 
-    guesses_dict = dict((i, guess_number.count(i)) for i in guess_number)
-    guesses_dict[9] = 0
-
-    print("The Naive-Bayes Classification correctly classifies " + str(guesses_dict[0]) + " out of " +
-          str(len(test_movies)))
-
-    print(guesses_dict)
+    print(dt.datetime.now())
 
     classification_result_2 = rank_classification_2(test_movies, list_of_decade_features)
     guess_number_2 = [x[2] for x in classification_result_2]
@@ -348,6 +359,8 @@ def main():
           str(len(test_movies)))
 
     print(guesses_dict_2)
+
+    print(dt.datetime.now())
 
     # ones = numpy.ones(10)
     # n, bins, patches = pyp.hist(numpy.array(guesses_dict.keys()) + ones, numpy.array(guesses_dict.keys()) + ones,

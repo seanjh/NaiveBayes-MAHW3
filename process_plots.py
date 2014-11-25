@@ -27,8 +27,10 @@ def process_one_plot(movie):
     plot_counts = dict()
     tokens = tokenize(movie.get('summary'))
     for word in tokens:
+        if word == '':
+            continue
         plot_counts[word] = plot_counts.setdefault(word, 0) + 1
-    del plot_counts['']
+    # del plot_counts['']
     return MovieResult(movie.get('year'), plot_counts)
 
 
