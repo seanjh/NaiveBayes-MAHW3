@@ -1,6 +1,7 @@
 from __future__ import division
 from collections import namedtuple
 from multiprocessing import Pool
+import re
 import math
 import string
 
@@ -14,11 +15,12 @@ import naive_bayes as nb
 BASE_LOG_PROBABILITY = math.log(0.0001)
 STOP_WORDS = frozenset(stopwords.words('english'))
 PUNCTUATION = frozenset(string.punctuation)
+NONWORDS = re.compile('[\W_]+')
 MovieResult = namedtuple('MovieResult', 'year, wordcounts')
 
 
 def tokenize(plot):
-    raw_tokens = [''.join(ch for ch in token if ch not in PUNCTUATION).lower() for token in
+    raw_tokens = [' '.join(re.split(NONWORDS, token)).lower() for token in
                   nltk.word_tokenize(plot.decode('utf_8', errors='ignore'))]
     return raw_tokens
 
