@@ -8,6 +8,8 @@ import numpy
 import matplotlib.pyplot as pyp
 import random
 import math
+import process_plots as pp
+import process_plots_2 as pp2
 
 # constants
 BINARY = True
@@ -181,6 +183,28 @@ def rank_classification(test_movies, list_of_decade_unigrams):
 
     return pairs_of_guesses_and_actuals
 
+def rank_classification_2(test_movies, list_of_decade_features):
+
+    # correct_classification = 0
+    count_movies = 0
+    pairs_of_guesses_and_actuals = list([])
+
+    for test_movie in test_movies:
+        guessed_decade = naive_bayes(test_movie, 'all', list_of_decade_features)
+        actual_decade = test_movie['year']
+
+        guessed_decade = sorted(guessed_decade, key=lambda tup: tup[1], reverse=True)
+        guessed_decade = [x[0] for x in guessed_decade]
+        location_of_correct_answer = guessed_decade.index(actual_decade)
+
+        print(str(count_movies) + " out of " + str(len(test_movies)))
+        count_movies += 1
+
+        pairs_of_guesses_and_actuals.append((guessed_decade, actual_decade, location_of_correct_answer))
+
+
+    return pairs_of_guesses_and_actuals
+
 
 
 def plot_movie_classification(movie_name, all_movies, list_of_decade_unigrams):
@@ -209,6 +233,42 @@ def plot_movie_classification(movie_name, all_movies, list_of_decade_unigrams):
     pyp.ylim(value.min() - 100, value[:-1].max() + 100)
     pyp.show()
 
+    # print(pp.process_one_plot(movie))
+
+
+def naive_bayes_2(movie, return_type, list_of_decade_features):
+
+    summary_words = pp.process_one_plot(movie)[1]
+
+    decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
+    drichlet_prior = math.log10(0.000001)
+
+    decade_value_pair = list([])
+    guessed_decade = 0
+    max_value = 0
+    for decade in decades:
+        # print('NB in decade ' + str(decade))
+        sum_log_likelihood = 0
+        # decade_unigram = list_of_decade_features[(decade - 1930) / 10][1]
+        for word in summary_words[1].keys():
+            word_likelihood = list_of_decade_features[decade][word]
+            sum_log_likelihood += word_likelihood
+        else:
+            sum_log_likelihood += drichlet_prior
+
+
+        # print(decade_value_pair)
+        decade_value_pair.append((decade, sum_log_likelihood))
+
+        if max_value == 0 or max_value < sum_log_likelihood:
+            max_value = sum_log_likelihood
+            guessed_decade = decade
+
+    if return_type == 'best':
+        return guessed_decade
+    else:
+        return decade_value_pair
+
 
 
 
@@ -224,6 +284,10 @@ def main():
     balanced_movies = balance_dataset(movies, 100)
     print('finish balancing movies')
 
+    # print(pp.process_plots_mp(balanced_movies)[0])
+    # print(pp.process_plots_mp(balanced_movies)[1])
+
+    print(pp2.get_movie_features(balanced_movies)[1930])
     # plot_pmf('radio', balanced_movies)
     # plot_pmf('beaver', balanced_movies)
     # plot_pmf('the', balanced_movies)
@@ -240,6 +304,10 @@ def main():
         count += 1
 
     print('finish splitting training/test movies')
+
+    list_of_decade_features = pp2.get_movie_features(balanced_movies)
+
+    print('finish getting all decade unigrams from process plots')
 
     list_of_decade_unigrams = list([])
     for decade in range(0, 9):
@@ -270,14 +338,25 @@ def main():
 
     print(guesses_dict)
 
-    ones = numpy.ones(10)
-    n, bins, patches = pyp.hist(numpy.array(guesses_dict.keys()) + ones, numpy.array(guesses_dict.keys()) + ones,
-                                weights=(numpy.array(guesses_dict.values()) / float(sum(guesses_dict.values()))),
-                                align='left', cumulative=True, color='w')
+    classification_result_2 = rank_classification_2(test_movies, list_of_decade_features)
+    guess_number_2 = [x[2] for x in classification_result_2]
 
-    pyp.plot(bins[:-1], n, '-o')
-    pyp.xticks((numpy.array(guesses_dict.keys()) + ones)[:-1])
-    pyp.show()
+    guesses_dict_2 = dict((i, guess_number_2.count(i)) for i in guess_number_2)
+    guesses_dict_2[9] = 0
+
+    print("The Naive-Bayes Classification 2 correctly classifies " + str(guesses_dict_2[0]) + " out of " +
+          str(len(test_movies)))
+
+    print(guesses_dict_2)
+
+    # ones = numpy.ones(10)
+    # n, bins, patches = pyp.hist(numpy.array(guesses_dict.keys()) + ones, numpy.array(guesses_dict.keys()) + ones,
+    #                             weights=(numpy.array(guesses_dict.values()) / float(sum(guesses_dict.values()))),
+    #                             align='left', cumulative=True, color='w')
+    #
+    # pyp.plot(bins[:-1], n, '-o')
+    # pyp.xticks((numpy.array(guesses_dict.keys()) + ones)[:-1])
+    # pyp.show()
 
 
 if __name__ == '__main__':
