@@ -1,5 +1,6 @@
 from collections import namedtuple
 from multiprocessing import Pool
+from math import log
 import string
 
 import nltk
@@ -8,6 +9,7 @@ from nltk.corpus import stopwords
 import parse_movies_example as pme
 from config import FILE_NAME
 
+BASE_LOG_PROBABILITY = log(0.0001)
 STOP_WORDS = frozenset(stopwords.words('english'))
 PUNCTUATION = frozenset(string.punctuation)
 MovieResult = namedtuple('MovieResult', 'year, wordcounts')
@@ -54,6 +56,32 @@ def get_movie_features(movies):
         #word_set = word_set.union(movie.wordcounts.items())
         add_plot_counts(word_counts.setdefault(movie.year, dict()), movie.wordcounts)
     return word_counts
+
+
+def calculate_cond_prob(movie_features):
+    word_probs = dict()
+    word_set = get_full_feature_set(movie_features)
+    for decade in movie_features.keys():
+        word_probs[decade] = calculate_decade_cond_probs(movie_features.get(decade), word_set)
+    return word_probs
+
+
+def get_full_feature_set(movie_features):
+    word_set = set()
+    for decade in movie_features.keys():
+        word_set = word_set.union(movie_features.get(decade).keys())
+    return word_set
+
+
+def calculate_decade_cond_probs(decade_features, word_set):
+    decade_word_probs = dict()
+    total_wordcount = sum([v for k, v in decade_features.iteritems()])
+    for word in word_set:
+        if decade_features.get(word) is None:
+            decade_word_probs[word] = BASE_LOG_PROBABILITY
+        else:
+            decade_word_probs[word] = log(decade_features.get(word) / total_wordcount)
+    return decade_word_probs
 
 
 def print_top_features(word_counts, num):
