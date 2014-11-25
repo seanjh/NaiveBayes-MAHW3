@@ -47,7 +47,16 @@ def process_plots_mp(movies):
     return results
 
 
-def report(word_counts, num):
+def get_movie_features(movies):
+    results = process_plots_mp(movies)
+    word_counts = dict()
+    for movie in results:
+        #word_set = word_set.union(movie.wordcounts.items())
+        add_plot_counts(word_counts.setdefault(movie.year, dict()), movie.wordcounts)
+    return word_counts
+
+
+def print_top_features(word_counts, num):
     for year, words in word_counts.iteritems():
         ordered = sorted(words.items(), key=lambda t: t[1], reverse=True)
         print 'Decade %s' % str(year)
@@ -57,12 +66,8 @@ def report(word_counts, num):
 
 def main():
     movies = pme.load_all_movies(FILE_NAME)
-    word_counts = dict()
-    results = process_plots_mp(movies)
-    for movie in results:
-        #word_set = word_set.union(movie.wordcounts.items())
-        add_plot_counts(word_counts.setdefault(movie.year, dict()), movie.wordcounts)
-    report(word_counts, 10)
+    features = get_movie_features(movies)
+    print_top_features(features, 10)
 
 
 if __name__ == '__main__':
