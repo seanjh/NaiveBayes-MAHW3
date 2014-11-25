@@ -1,10 +1,7 @@
 import gzip
 import re
-<<<<<<< HEAD
-
-=======
 from config import FILE_NAME
->>>>>>> naive-bayes
+
 
 def load_all_movies(filename):
     """
@@ -42,18 +39,15 @@ def load_all_movies(filename):
         if line.startswith("PL: ") and current_movie:
             # Add to the current movie's description
             current_movie['summary'].append(line.replace("PL: ",""))
-    print "Skipped",skipped
+    print "Skipped", skipped
 
 
-<<<<<<< HEAD
 #all_movies = list(load_all_movies(FILE_NAME))
 
 #len(all_movies)
-=======
 # all_movies = list(load_all_movies(FILE_NAME))
 #
 # print(all_movies[0])
 # print(all_movies[1])
 # len(all_movies)
->>>>>>> naive-bayes
 # => 379451
