@@ -208,7 +208,7 @@ def rank_classification_2(test_movies, list_of_decade_features):
 
 
 
-def plot_movie_classification(movie_name, all_movies, list_of_decade_unigrams):
+def plot_movie_classification(movie_name, all_movies, list_of_decade_features):
 
     movie_to_classify = dict()
     for movie in all_movies:
@@ -219,7 +219,7 @@ def plot_movie_classification(movie_name, all_movies, list_of_decade_unigrams):
 
     # print(naive_bayes(movie_to_classify['summary'], 'all', list_of_decade_unigrams))
 
-    decade_value_tuples = naive_bayes(movie_to_classify['summary'], 'all', list_of_decade_unigrams)
+    decade_value_tuples = naive_bayes_2(movie_to_classify['summary'], 'all', list_of_decade_features)
     decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020])
 
     value = numpy.array([])
@@ -256,6 +256,7 @@ def naive_bayes_2(movie, return_type, list_of_decade_features):
         # decade_unigram = list_of_decade_features[(decade - 1930) / 10][1]
         for word in summary_words.keys():
             word_likelihood = list_of_decade_features[decade].get(word)
+            # print(word_likelihood)
             if word_likelihood is not None:
                 sum_log_likelihood += word_likelihood
             else:
@@ -268,6 +269,8 @@ def naive_bayes_2(movie, return_type, list_of_decade_features):
         if max_value == 0 or max_value < sum_log_likelihood:
             max_value = sum_log_likelihood
             guessed_decade = decade
+
+    # print(decade_value_pair)
 
     if return_type == 'best':
         return guessed_decade
@@ -310,21 +313,21 @@ def main():
 
     print('finish splitting training/test movies')
 
-    list_of_decade_features = pp.get_movie_features(training_movies)
+    list_of_decade_features = pp.get_training_classifier(pp.get_movie_features(training_movies))
 
     print('finish getting all decade unigrams from process plots')
 
-    list_of_decade_unigrams = list([])
-    for decade in range(0, 9):
-        decade_unigram = get_unigrams_per_decade(str(1930 + 10*decade), training_movies)
-        list_of_decade_unigrams.append(decade_unigram)
-
-    print('finish getting all decade unigrams')
+    # list_of_decade_unigrams = list([])
+    # for decade in range(0, 9):
+    #     decade_unigram = get_unigrams_per_decade(str(1930 + 10*decade), training_movies)
+    #     list_of_decade_unigrams.append(decade_unigram)
+    #
+    # print('finish getting all decade unigrams')
 
     # print(list_of_decade_features[1930])
     # print(list_of_decade_unigrams[0])
 
-    # plot_movie_classification("Finding Nemo", movies, list_of_decade_unigrams)
+    plot_movie_classification("Finding Nemo", movies, list_of_decade_features)
     # plot_movie_classification("The Matrix", movies, list_of_decade_unigrams)
     # plot_movie_classification("Gone with the Wind", movies, list_of_decade_unigrams)
     # plot_movie_classification("Harry Potter and the Goblet of Fire", movies, list_of_decade_unigrams)

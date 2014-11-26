@@ -1,7 +1,6 @@
 from __future__ import division
 from collections import namedtuple
 from multiprocessing import Pool
-import re
 import math
 import string
 
@@ -12,15 +11,14 @@ import parse_movies_example as pme
 from config import FILE_NAME
 import naive_bayes as nb
 
-BASE_LOG_PROBABILITY = math.log(0.0001)
+BASE_LOG_PROBABILITY = math.log10(0.0001)
 STOP_WORDS = frozenset(stopwords.words('english'))
 PUNCTUATION = frozenset(string.punctuation)
-NONWORDS = re.compile('[\W_]+')
 MovieResult = namedtuple('MovieResult', 'year, wordcounts')
 
 
 def tokenize(plot):
-    raw_tokens = [' '.join(re.split(NONWORDS, token)).lower() for token in
+    raw_tokens = [''.join(ch for ch in token if ch not in PUNCTUATION).lower() for token in
                   nltk.word_tokenize(plot.decode('utf_8', errors='ignore'))]
     return raw_tokens
 
@@ -70,7 +68,7 @@ def get_training_classifier(movie_features):
 
 def calculate_decade_cond_probs(decade_features):
     total_wordcount = sum([v for k, v in decade_features.iteritems()])
-    return {word: math.log(count/total_wordcount) for (word, count) in decade_features.iteritems()}
+    return {word: math.log10(count/total_wordcount) for (word, count) in decade_features.iteritems()}
 
 
 def print_top_features(features, num):
