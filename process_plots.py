@@ -7,14 +7,11 @@ import string
 import nltk
 from nltk.corpus import stopwords
 
-import parse_movies_example as pme
-from config import FILE_NAME
-import naive_bayes as nb
-
+ALPHA = 1
 BASE_LOG_PROBABILITY = math.log10(0.0001)
 STOP_WORDS = frozenset(stopwords.words('english'))
 PUNCTUATION = frozenset(string.punctuation)
-MovieResult = namedtuple('MovieResult', 'year, wordcounts')
+MovieResult = namedtuple('MovieResult', 'year, wordcounts, total')
 
 
 def tokenize(plot):
@@ -26,12 +23,16 @@ def tokenize(plot):
 def process_one_plot(movie):
     plot_counts = dict()
     tokens = tokenize(movie.get('summary'))
+    total = 0
+    # Word occurence
     for word in tokens:
         if word == '':
             continue
         plot_counts[word] = plot_counts.setdefault(word, 0) + 1
-    # del plot_counts['']
-    return MovieResult(movie.get('year'), plot_counts)
+        total += 1
+    # Word frequency
+    #plot_counts = {word: count/total for (word, count) in plot_counts.iteritems()}
+    return MovieResult(movie.get('year'), plot_counts, total)
 
 
 def add_plot_counts(decade_word_counts, plot_counts):
@@ -77,15 +78,3 @@ def print_top_features(features, num):
         print 'Decade %s' % str(year)
         for word in ordered[:num]:
             print '\t%s' % str(word)
-
-
-def main():
-    movies = list(pme.load_all_movies(FILE_NAME))
-    balanced = nb.balance_dataset(movies, 100)
-    features = get_movie_features(balanced)
-    classifier = get_training_classifier(features)
-    print classifier
-
-
-if __name__ == '__main__':
-    main()
