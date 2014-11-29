@@ -70,11 +70,3 @@ def get_training_classifier(movie_features):
 def calculate_decade_cond_probs(decade_features):
     total_wordcount = sum([v for k, v in decade_features.iteritems()])
     return {word: math.log10(count/total_wordcount) for (word, count) in decade_features.iteritems()}
-
-
-def print_top_features(features, num):
-    for year, words in features.iteritems():
-        ordered = sorted(words.items(), key=lambda t: t[1], reverse=True)
-        print 'Decade %s' % str(year)
-        for word in ordered[:num]:
-            print '\t%s' % str(word)
