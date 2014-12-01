@@ -14,7 +14,7 @@ def load_all_movies(filename):
         }
     You can download `plot.list.gz` from http://www.imdb.com/interfaces
     """
-    assert "plot.list.gz" in filename # Or whatever you called it
+    assert FILE_NAME in filename # Or whatever you called it
     current_movie = None
 
     skipped = 0
