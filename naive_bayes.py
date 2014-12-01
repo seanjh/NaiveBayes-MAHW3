@@ -74,29 +74,6 @@ def plot_pmf(word, movies):
 
     print(get_unigram(years))
 
-
-def get_unigrams_per_decade(decade, movies):
-
-    summary_decade = ''
-
-    for movie in movies:
-
-        year = movie['year']
-        summary = ' '.join(re.split(NONWORDS, movie['summary']))
-
-        if decade == 'all':
-            summary_decade += ' '
-            summary_decade += summary
-        else:
-            if str(year) == decade:
-                summary_decade += ' '
-                summary_decade += summary
-
-    # print(decade)
-    # print(str(get_unigram(summary_decade.lower())[1]) + ' words')
-
-    return get_unigram(summary_decade.lower())
-
 def likelihood_word_per_decade(word, decade_unigram):
 
     drichlet_prior = 0.000001
@@ -194,6 +171,67 @@ def naive_bayes(movie, return_type, list_of_decade_features):
         return decade_value_pair
 
 
+def get_decade_word_probs(movies, number_of_words):
+    results = pp.process_plots_mp(movies)
+    print("finish pp process plots")
+    word_counts = dict()
+    number_of_films_per_decade = numpy.zeros(9)
+    for movie in results:
+        movie_ones = dict.fromkeys( movie[1].iterkeys(), 1 )
+        movieResult_ones = pp.MovieResult(movie.year, movie_ones, movie.total)
+        # pp.add_plot_counts(word_counts.setdefault(movie.year, dict()), movie.wordcounts)
+        # print(movieResult_ones)
+        number_of_films_per_decade[(movie.year-1930) / 10] += 1
+        pp.add_plot_counts(word_counts.setdefault(movieResult_ones.year, dict()), movieResult_ones.wordcounts)
+    print("finish word_counts")
+    print(number_of_films_per_decade)
+    print(word_counts.get(1930).get('are'))
+
+    word_counts_probs = dict()
+    word_counts_probs_sorted = dict()
+    all_word_ever_probs = dict()
+    decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
+    for decade in decades:
+        word_probs = {word: (float(count) / number_of_films_per_decade[(decade-1930)/10]) for (word, count) in word_counts.get(decade).iteritems()}
+        word_counts_probs[decade] = word_counts_probs.setdefault(decade, word_probs)
+        # print("finish " + str(decade) + " word_probs")
+
+        for decade_word_key in word_counts_probs.get(decade).keys():
+            if decade_word_key in all_word_ever_probs.keys():
+                if word_counts_probs.get(decade)[decade_word_key] < all_word_ever_probs[decade_word_key]:
+                    all_word_ever_probs[decade_word_key] = word_counts_probs.get(decade)[decade_word_key]
+            else:
+                all_word_ever_probs[decade_word_key] = word_counts_probs.get(decade)[decade_word_key]
+
+        # print("finish adding " + str(decade) + " words to all words ever")
+
+        # for key
+        # word_probs_sorted = sorted(word_probs.items(), key=lambda x: x[1])
+        # word_counts_probs_sorted[decade] = word_counts_probs.setdefault(decade, word_probs_sorted[:number_of_words])
+    print("finish word_counts_probs")
+    print(word_counts_probs.get(1930).get('are'))
+    print(all_word_ever_probs.get('are'))
+
+    iconicity_of_words = dict()
+    word_counts_iconicity_sorted = dict()
+    for decadeAgain in decades:
+        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(decadeAgain).iteritems()}
+        iconicity_of_words[decadeAgain] = iconicity_of_words.setdefault(decadeAgain, word_iconicity)
+
+
+        sorted(iconicity_of_words.items(), key=lambda x: x[1])
+        word_counts_iconicity_sorted[decade] = word_counts_probs.setdefault(decade, iconicity_of_words[:number_of_words])
+
+    print("finish iconicity_of_words")
+    # print(iconicity_of_words.get(1930).get('are'))
+
+    print(word_counts_iconicity_sorted.get(1930))
+
+
+
+    # print(word_counts_probs_sorted.get(1930))
+
+    # return word_counts_probs_sorted
 
 
 def main():
@@ -205,8 +243,8 @@ def main():
     # plot_pmf('beaver', movies)
     # plot_pmf('the', movies)
 
-    balanced_movies = balance_dataset(movies, 6000)
     # balanced_movies = balance_dataset(movies, 6000)
+    balanced_movies = balance_dataset(movies, 100)
     print('finish balancing movies')
 
     # print(pp.process_plots_mp(balanced_movies)[0])
@@ -233,6 +271,9 @@ def main():
     list_of_decade_features = pp.get_training_classifier(pp.get_movie_features(training_movies))
 
     print('finish getting all decade unigrams from process plots')
+
+    # print(pp.process_one_plot(movies[0]))
+    # print(pp.get_movie_features(training_movies).get(1930))
 
     # plot_movie_classification("Finding Nemo", movies, list_of_decade_features)
     # plot_movie_classification("The Matrix", movies, list_of_decade_unigrams)
@@ -280,4 +321,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+
+    movies = list(pme.load_all_movies(FILE_NAME))
+    balanced_movies = balance_dataset(movies, 200)
+    get_decade_word_probs(balanced_movies, 10)
