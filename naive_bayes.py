@@ -320,6 +320,7 @@ def main():
     v = CountVectorizer(decode_error='ignore')
     summary_list = numpy.array([movie_dict['summary'] for movie_dict in balanced_movies])
     year_list = numpy.array([movie_dict2['year'] for movie_dict2 in balanced_movies])
+
     summary_vectorized = v.fit_transform(summary_list).toarray()
 
     test_x = []
@@ -327,16 +328,20 @@ def main():
     test_y = []
     train_y = []
 
-    for i in range(0, len(summary_vectorized)):
+    for i in range(0, len(summary_list)):
         if i % 3 == 0:
-            test_x.append(summary_vectorized[i])
+            test_x.append(summary_list[i])
             test_y.append(year_list[i])
         else:
-            train_x.append(summary_vectorized[i])
+            train_x.append(summary_list[i])
             train_y.append(year_list[i])
+
+    summary_vectorized_train = v.fit_transform(numpy.array(train_x)).toarray()
+    summary_vectorized_test = v.fit_transform(numpy.array(test_x)).toarray()
+
     clf = MultinomialNB()
-    clf.fit(train_x, train_y)
-    pred_y = clf.predict(test_x)
+    clf.fit(summary_vectorized_train, train_y)
+    pred_y = clf.predict(summary_vectorized_test)
 
     correct_num = (pred_y == test_y).sum()
     print("The SKLearn Naive-Bayes Classification correctly classifies %d out of %d (%0.3f%% accuracy)" % (
