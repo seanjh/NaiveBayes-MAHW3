@@ -78,10 +78,10 @@ def plot_pmf(word, movies, dataset_type):
 
     if word != '':
         pyp.title('PMF of movies containing "' + word + '" across ' + dataset_type + ' dataset')
-        pyp.savefig("PMF_" + word + "_" + dataset_type + ".jpg")
+        pyp.savefig("PMF_" + word + "_" + dataset_type + ".png")
     else:
         pyp.title('PMF of all movies across ' + dataset_type + ' dataset')
-        pyp.savefig("PMF_all_" + dataset_type + ".jpg")
+        pyp.savefig("PMF_all_" + dataset_type + ".png")
 
 
 def likelihood_word_per_decade(word, decade_unigram):
@@ -141,7 +141,7 @@ def plot_movie_classification(movie_name, all_movies, list_of_decade_features):
     pyp.title('Prediction for movie "' + movie_name + '" across each decade (in log likelihood)')
     pyp.xlabel("Decades")
     pyp.ylabel("Sum of log likelihood")
-    pyp.savefig('Prediction_' + movie_name.replace(' ', '_') + ".jpg")
+    pyp.savefig('Prediction_' + movie_name.replace(' ', '_') + ".png")
 
 
 def naive_bayes(movie, return_type, list_of_decade_features):
@@ -181,8 +181,7 @@ def naive_bayes(movie, return_type, list_of_decade_features):
     else:
         return decade_value_pair
 
-
-def get_decade_word_probs(movies, number_of_words_a, number_of_words_b):
+def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b):
     results = pp.process_plots_mp(movies)
 
     word_counts = dict()
@@ -194,42 +193,6 @@ def get_decade_word_probs(movies, number_of_words_a, number_of_words_b):
         pp.add_plot_counts(word_counts.setdefault(movieResult_ones.year, dict()), movieResult_ones.wordcounts)
     print(number_of_films_per_decade)
 
-    word_counts_probs = dict()
-    all_word_ever_probs = dict()
-    decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
-    for decade in decades:
-        word_probs = {word: (float(count) / number_of_films_per_decade[(decade-1930)/10]) for (word, count) in word_counts.get(decade).iteritems()}
-        word_counts_probs[decade] = word_counts_probs.setdefault(decade, word_probs)
-        # print("finish " + str(decade) + " word_probs")
-
-        for decade_word_key in word_counts_probs.get(decade).keys():
-            if decade_word_key in all_word_ever_probs.keys():
-                if word_counts_probs.get(decade)[decade_word_key] < all_word_ever_probs[decade_word_key]:
-                    all_word_ever_probs[decade_word_key] = word_counts_probs.get(decade)[decade_word_key]
-            else:
-                all_word_ever_probs[decade_word_key] = word_counts_probs.get(decade)[decade_word_key]
-
-        # print("finish adding " + str(decade) + " words to all words ever")
-
-    iconicity_of_words = dict()
-    word_counts_iconicity_sorted_a = dict()
-    word_counts_iconicity_sorted_b = dict()
-    for d in decades:
-        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d).iteritems()}
-        iconicity_of_words[d] = iconicity_of_words.setdefault(d, word_iconicity)
-
-        iconicity_of_words_sorted = sorted(iconicity_of_words[d].items(), key=lambda x:x[1], reverse=True)
-        top_words_tuple = iconicity_of_words_sorted[:number_of_words_b]
-        top_words_a = [w_a[0] for w_a in top_words_tuple]
-        top_words_b = [w_b[0] for w_b in top_words_tuple[:number_of_words_a]]
-        word_counts_iconicity_sorted_a[d] = word_counts_iconicity_sorted_a.setdefault(d, top_words_a)
-        word_counts_iconicity_sorted_b[d] = word_counts_iconicity_sorted_b.setdefault(d, top_words_b)
-
-    return [word_counts_iconicity_sorted_a, word_counts_iconicity_sorted_b]
-
-def get_decade_word_probs_2(movies, features, number_of_words_a, number_of_words_b):
-
-    number_of_films_per_decade = len(movies) / 9
     decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
     all_word_ever_probs = dict()
     for d1 in decades:
@@ -238,32 +201,28 @@ def get_decade_word_probs_2(movies, features, number_of_words_a, number_of_words
 
     all_word_ever_probs = dict.fromkeys(all_word_ever_probs, 10000000)
 
-    word_counts = dict()
     word_counts_probs = dict()
-    for decade in decades:
-        word_probs = {word: (float(count) / number_of_films_per_decade[(decade-1930)/10]) for (word, count) in word_counts.get(decade).iteritems()}
-        word_counts_probs[decade] = word_counts_probs.setdefault(decade, word_probs)
-        # print("finish " + str(decade) + " word_probs")
+    for d2 in decades:
+        word_probs = {word: (float(count) / number_of_films_per_decade[(d2-1930)/10]) for (word, count) in word_counts.get(d2).iteritems()}
+        word_counts_probs[d2] = word_counts_probs.setdefault(d2, word_probs)
 
-        for decade_word_key in word_counts_probs.get(decade).keys():
-            if word_counts_probs.get(decade)[decade_word_key] < all_word_ever_probs[decade_word_key]:
-                all_word_ever_probs[decade_word_key] = word_counts_probs.get(decade)[decade_word_key]
-
-        # print("finish adding " + str(decade) + " words to all words ever")
+        for decade_word_key in word_counts_probs.get(d2).keys():
+            if word_counts_probs.get(d2)[decade_word_key] < all_word_ever_probs[decade_word_key]:
+                all_word_ever_probs[decade_word_key] = word_counts_probs.get(d2)[decade_word_key]
 
     iconicity_of_words = dict()
     word_counts_iconicity_sorted_a = dict()
     word_counts_iconicity_sorted_b = dict()
-    for d in decades:
-        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d).iteritems()}
-        iconicity_of_words[d] = iconicity_of_words.setdefault(d, word_iconicity)
+    for d3 in decades:
+        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d3).iteritems()}
+        iconicity_of_words[d3] = iconicity_of_words.setdefault(d3, word_iconicity)
 
-        iconicity_of_words_sorted = sorted(iconicity_of_words[d].items(), key=lambda x:x[1], reverse=True)
+        iconicity_of_words_sorted = sorted(iconicity_of_words[d3].items(), key=lambda x:x[1], reverse=True)
         top_words_tuple = iconicity_of_words_sorted[:number_of_words_b]
         top_words_a = [w_a[0] for w_a in top_words_tuple]
         top_words_b = [w_b[0] for w_b in top_words_tuple[:number_of_words_a]]
-        word_counts_iconicity_sorted_a[d] = word_counts_iconicity_sorted_a.setdefault(d, top_words_a)
-        word_counts_iconicity_sorted_b[d] = word_counts_iconicity_sorted_b.setdefault(d, top_words_b)
+        word_counts_iconicity_sorted_a[d3] = word_counts_iconicity_sorted_a.setdefault(d3, top_words_a)
+        word_counts_iconicity_sorted_b[d3] = word_counts_iconicity_sorted_b.setdefault(d3, top_words_b)
 
     return [word_counts_iconicity_sorted_a, word_counts_iconicity_sorted_b]
 
@@ -327,8 +286,13 @@ def main():
                                 weights=(numpy.array(guesses_dict.values()) / float(sum(guesses_dict.values()))),
                                 align='left', cumulative=True, color='w')
 
+    pyp.clf()
     pyp.plot(bins[:-1], n, '-o')
     pyp.xticks((numpy.array(guesses_dict.keys()) + ones)[:-1])
+    pyp.title("Cumulative match curve")
+    pyp.xlabel("Number of guesses")
+    pyp.ylabel("Guesses right")
+    pyp.savefig("Cumulative_match_curve.png")
     # pyp.show()
 
     print('plotting confusion matrix')
@@ -347,8 +311,8 @@ def main():
     print("================================================")
     print("START OF QUESTION 3")
     print("getting 10 most iconic words per decade")
-    iconic_words = get_decade_word_probs_2(balanced_movies, list_of_decade_features, 10, 100)
-    # iconic_words = get_decade_word_probs(balanced_movies, 10, 100)
+    list_of_decade_features_all = pp.get_training_classifier(pp.get_movie_features(balanced_movies))
+    iconic_words = get_decade_word_probs(balanced_movies, list_of_decade_features_all, 10, 100)
     iconic_words_10 = iconic_words[0]
     pprint.pprint(iconic_words_10)
 
