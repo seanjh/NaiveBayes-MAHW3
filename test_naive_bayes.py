@@ -25,7 +25,7 @@ def test_homegrown_nb(balanced):
     features = get_movie_features(training_movies)
     classifier = get_training_classifier(features)
 
-    results = nb.rank_classification_2(test_movies, classifier)
+    results = nb.rank_classification(test_movies, classifier)
     correct = sum([1 for result in results if result[0][0] == result[1]])
     print "NB classifier predicted %d/%d correctly (%0.3f%% accuracy)" % (
         correct, len(results), correct / len(results) * 100
