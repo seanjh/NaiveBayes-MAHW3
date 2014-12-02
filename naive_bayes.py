@@ -392,6 +392,7 @@ def main():
     print("START OF QUESTION 4")
     print("classifying movies using sklearn")
 
+
     #balanced_movies = balance_dataset(movies, BALANCE_NUM)
     test_sklearn_nb(balanced_movies)
 
@@ -420,6 +421,7 @@ def main():
     # print("The SKLearn Naive-Bayes Classification correctly classifies %d out of %d (%0.3f%% accuracy)" % (
     #     correct_num, len(test_y), float(correct_num) / len(test_y) * 100
     # ))
+
     print("END OF QUESTION 4")
     print("================================================")
 
