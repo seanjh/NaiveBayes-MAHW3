@@ -337,7 +337,7 @@ def main():
             train_y.append(year_list[i])
 
     summary_vectorized_train = v.fit_transform(numpy.array(train_x)).toarray()
-    summary_vectorized_test = v.fit_transform(numpy.array(test_x)).toarray()
+    summary_vectorized_test = v.transform(numpy.array(test_x)).toarray()
 
     clf = MultinomialNB()
     clf.fit(summary_vectorized_train, train_y)
