@@ -14,13 +14,9 @@ from sklearn.svm import LinearSVC, SVC
 
 import parse_movies_example as pme
 import naive_bayes as nb
-from config import FILE_NAME, N_FEATURES, TARGET_CUM_VAR_RATIO, BALANCE_NUM, LOGGER
+from config import FILE_NAME, N_FEATURES, TARGET_CUM_VAR_RATIO, BALANCE_NUM, LOGGER, set_file_logger
 
-logStart = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-logging.basicConfig(
-    filename='logs/%s_problem5.log' % logStart,
-    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s'
-)
+set_file_logger('problem5')
 
 
 def split_list(full_list, ratio=4):
@@ -136,15 +132,23 @@ def five_c(train_features, train_labels, test_features, test_labels):
 def five_f(train_features, train_labels, test_features, test_labels):
     n_features = [10, 100, 1000, 10000]
     accuracy = []
+    # Classify with different feature subsets
     for num in n_features:
         transformer = TruncatedSVD(n_components=num)
         d_train_feat, d_test_feat = feature_decomposition(transformer, train_features, test_features)
         d_train_feat, d_test_feat = rescale_features(d_train_feat, d_test_feat)
-        classifier = LogisticRegression()
-        results = classify(classifier,
+        results = classify(LogisticRegression(),
                  d_train_feat, train_labels, d_test_feat, test_labels,
                  "Logistic Regression classification")
         accuracy.append(get_correct_num(results, test_labels) / len(test_labels))
+
+    # Classify with the full feature set
+    n_features.append(csr_matrix(train_features[-1]).toarray().size)
+    results = classify(LogisticRegression(),
+                       train_features, train_labels, test_features, test_labels,
+                       "Logistic Regression classification")
+    accuracy.append(get_correct_num(results, test_labels) / len(test_labels))
+
     LOGGER.debug(["%d: %.4f%%" % (n_features[i], accuracy[i] * 100) for i in range(len(n_features))])
     plot_feature_decomposition(n_features, accuracy)
 
