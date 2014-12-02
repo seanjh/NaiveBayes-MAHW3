@@ -3,19 +3,16 @@ import logging
 import datetime
 
 import numpy as np
+from scipy.sparse import issparse, csr_matrix
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction import DictVectorizer
 
 import naive_bayes as nb
 import parse_movies_example as pme
 from process_plots import get_movie_features, get_training_classifier, process_plots_mp
-from config import FILE_NAME, BALANCE_NUM, LOGGER
+from config import FILE_NAME, BALANCE_NUM, LOGGER, set_file_logger
 
-logStart = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-logging.basicConfig(
-    filename='logs/%s_naivebayes.log' % logStart,
-    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s'
-)
+set_file_logger("test_naivebayes")
 
 
 def print_top_features(features, num):
@@ -49,6 +46,9 @@ def test_sklearn_nb(balanced):
     vec = DictVectorizer()
     training_features = vec.fit_transform([movie.wordcounts for movie in training_movies]).toarray()
     training_labels = np.array([movie.year for movie in training_movies])
+    #LOGGER.debug("Original size of feature vectors: %d (issparse: %s)" % (
+        #csr_matrix(training_features[-1]).toarray().size, str(issparse(training_features))
+    #))
 
     mnb_classifier = MultinomialNB()
     mnb_classifier.fit(training_features, training_labels)
@@ -67,6 +67,7 @@ def test_sklearn_nb(balanced):
 def main():
     movies = list(pme.load_all_movies(FILE_NAME))
     balanced = nb.balance_dataset(movies, BALANCE_NUM)
+    print "Balanced samples: %d" % len(balanced)
     test_homegrown_nb(balanced)
     test_sklearn_nb(balanced)
 

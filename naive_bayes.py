@@ -9,9 +9,12 @@ import matplotlib.pyplot as pyp
 import random
 import math
 import process_plots as pp
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction import DictVectorizer
+#from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 import pprint
+
+import problem5 as p5
 
 # constants
 BINARY = True
@@ -184,6 +187,80 @@ def naive_bayes(movie, return_type, list_of_decade_features):
     else:
         return decade_value_pair
 
+
+def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b):
+    results = pp.process_plots_mp(movies)
+
+    word_counts = dict()
+    number_of_films_per_decade = numpy.zeros(9)
+    for movie in results:
+        movie_ones = dict.fromkeys( movie[1].iterkeys(), 1 )
+        movieResult_ones = pp.MovieResult(movie.year, movie_ones, movie.total)
+        number_of_films_per_decade[(movie.year-1930) / 10] += 1
+        pp.add_plot_counts(word_counts.setdefault(movieResult_ones.year, dict()), movieResult_ones.wordcounts)
+    print(number_of_films_per_decade)
+
+    decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
+    all_word_ever_probs = dict()
+    for d1 in decades:
+        # print(feature)
+        all_word_ever_probs = dict(all_word_ever_probs.items() + features[d1].items())
+
+    all_word_ever_probs = dict.fromkeys(all_word_ever_probs, 10000000)
+
+    word_counts_probs = dict()
+    for d2 in decades:
+        word_probs = {word: (float(count) / number_of_films_per_decade[(d2-1930)/10]) for (word, count) in word_counts.get(d2).iteritems()}
+        word_counts_probs[d2] = word_counts_probs.setdefault(d2, word_probs)
+
+        for decade_word_key in word_counts_probs.get(d2).keys():
+            if word_counts_probs.get(d2)[decade_word_key] < all_word_ever_probs[decade_word_key]:
+                all_word_ever_probs[decade_word_key] = word_counts_probs.get(d2)[decade_word_key]
+
+    iconicity_of_words = dict()
+    word_counts_iconicity_sorted_a = dict()
+    word_counts_iconicity_sorted_b = dict()
+    for d3 in decades:
+        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d3).iteritems()}
+        iconicity_of_words[d3] = iconicity_of_words.setdefault(d3, word_iconicity)
+
+        iconicity_of_words_sorted = sorted(iconicity_of_words[d3].items(), key=lambda x:x[1], reverse=True)
+        top_words_tuple = iconicity_of_words_sorted[:number_of_words_b]
+        top_words_b = [w_b[0] for w_b in top_words_tuple]
+        top_words_a = [w_a[0] for w_a in top_words_tuple[:number_of_words_a]]
+        word_counts_iconicity_sorted_a[d3] = word_counts_iconicity_sorted_a.setdefault(d3, top_words_a)
+        word_counts_iconicity_sorted_b[d3] = word_counts_iconicity_sorted_b.setdefault(d3, top_words_b)
+
+    return [word_counts_iconicity_sorted_a, word_counts_iconicity_sorted_b]
+
+
+def test_sklearn_nb(balanced):
+    movie_words = pp.process_plots_mp(balanced)
+
+    training_movies = [movie_words[i] for i in range(len(movie_words)) if i % 3 != 0]
+    test_movies = [movie_words[i] for i in range(len(movie_words)) if i % 3 == 0]
+
+    vec = DictVectorizer()
+    training_features = vec.fit_transform([movie.wordcounts for movie in training_movies]).toarray()
+    training_labels = numpy.array([movie.year for movie in training_movies])
+    #LOGGER.debug("Original size of feature vectors: %d (issparse: %s)" % (
+        #csr_matrix(training_features[-1]).toarray().size, str(issparse(training_features))
+    #))
+
+    mnb_classifier = MultinomialNB()
+    mnb_classifier.fit(training_features, training_labels)
+
+    test_features = vec.transform([movie.wordcounts for movie in test_movies])
+    test_labels = numpy.array([movie.year for movie in test_movies])
+
+    results = mnb_classifier.predict(test_features)
+
+    correct = sum([1 for i, result in enumerate(results) if result == test_labels[i]])
+    print("skleanrn's MultinomialNB classifier predicted %d/%d correctly (%0.3f%% accuracy)" % (
+        correct, len(test_labels), correct / len(test_labels) * 100
+    ))
+
+
 def main():
 
     print('loading movies')
@@ -315,81 +392,40 @@ def main():
     print("START OF QUESTION 4")
     print("classifying movies using sklearn")
 
-    balanced_movies = balance_dataset(movies, BALANCE_NUM)
+    #balanced_movies = balance_dataset(movies, BALANCE_NUM)
+    test_sklearn_nb(balanced_movies)
 
-    v = CountVectorizer(decode_error='ignore')
-    summary_list = numpy.array([movie_dict['summary'] for movie_dict in balanced_movies])
-    year_list = numpy.array([movie_dict2['year'] for movie_dict2 in balanced_movies])
-    summary_vectorized = v.fit_transform(summary_list).toarray()
+    #v = CountVectorizer(decode_error='ignore')
+    #summary_list = numpy.array([movie_dict['summary'] for movie_dict in balanced_movies])
+    #year_list = numpy.array([movie_dict2['year'] for movie_dict2 in balanced_movies])
+    #summary_vectorized = v.fit_transform(summary_list).toarray()
 
-    test_x = []
-    train_x = []
-    test_y = []
-    train_y = []
-
-    for i in range(0, len(summary_vectorized)):
-        if i % 3 == 0:
-            test_x.append(summary_vectorized[i])
-            test_y.append(year_list[i])
-        else:
-            train_x.append(summary_vectorized[i])
-            train_y.append(year_list[i])
-    clf = MultinomialNB()
-    clf.fit(train_x, train_y)
-    pred_y = clf.predict(test_x)
-
-    correct_num = (pred_y == test_y).sum()
-    print("The SKLearn Naive-Bayes Classification correctly classifies %d out of %d (%0.3f%% accuracy)" % (
-        correct_num, len(test_y), float(correct_num) / len(test_y) * 100
-    ))
+    #test_x = []
+    # train_x = []
+    # test_y = []
+    # train_y = []
+    #
+    # for i in range(0, len(summary_vectorized)):
+    #     if i % 3 == 0:
+    #         test_x.append(summary_vectorized[i])
+    #         test_y.append(year_list[i])
+    #     else:
+    #         train_x.append(summary_vectorized[i])
+    #         train_y.append(year_list[i])
+    # clf = MultinomialNB()
+    # clf.fit(train_x, train_y)
+    # pred_y = clf.predict(test_x)
+    #
+    # correct_num = (pred_y == test_y).sum()
+    # print("The SKLearn Naive-Bayes Classification correctly classifies %d out of %d (%0.3f%% accuracy)" % (
+    #     correct_num, len(test_y), float(correct_num) / len(test_y) * 100
+    # ))
     print("END OF QUESTION 4")
     print("================================================")
 
-
-def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b):
-    results = pp.process_plots_mp(movies)
-
-    word_counts = dict()
-    number_of_films_per_decade = numpy.zeros(9)
-    for movie in results:
-        movie_ones = dict.fromkeys( movie[1].iterkeys(), 1 )
-        movieResult_ones = pp.MovieResult(movie.year, movie_ones, movie.total)
-        number_of_films_per_decade[(movie.year-1930) / 10] += 1
-        pp.add_plot_counts(word_counts.setdefault(movieResult_ones.year, dict()), movieResult_ones.wordcounts)
-    print(number_of_films_per_decade)
-
-    decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
-    all_word_ever_probs = dict()
-    for d1 in decades:
-        # print(feature)
-        all_word_ever_probs = dict(all_word_ever_probs.items() + features[d1].items())
-
-    all_word_ever_probs = dict.fromkeys(all_word_ever_probs, 10000000)
-
-    word_counts_probs = dict()
-    for d2 in decades:
-        word_probs = {word: (float(count) / number_of_films_per_decade[(d2-1930)/10]) for (word, count) in word_counts.get(d2).iteritems()}
-        word_counts_probs[d2] = word_counts_probs.setdefault(d2, word_probs)
-
-        for decade_word_key in word_counts_probs.get(d2).keys():
-            if word_counts_probs.get(d2)[decade_word_key] < all_word_ever_probs[decade_word_key]:
-                all_word_ever_probs[decade_word_key] = word_counts_probs.get(d2)[decade_word_key]
-
-    iconicity_of_words = dict()
-    word_counts_iconicity_sorted_a = dict()
-    word_counts_iconicity_sorted_b = dict()
-    for d3 in decades:
-        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d3).iteritems()}
-        iconicity_of_words[d3] = iconicity_of_words.setdefault(d3, word_iconicity)
-
-        iconicity_of_words_sorted = sorted(iconicity_of_words[d3].items(), key=lambda x:x[1], reverse=True)
-        top_words_tuple = iconicity_of_words_sorted[:number_of_words_b]
-        top_words_b = [w_b[0] for w_b in top_words_tuple]
-        top_words_a = [w_a[0] for w_a in top_words_tuple[:number_of_words_a]]
-        word_counts_iconicity_sorted_a[d3] = word_counts_iconicity_sorted_a.setdefault(d3, top_words_a)
-        word_counts_iconicity_sorted_b[d3] = word_counts_iconicity_sorted_b.setdefault(d3, top_words_b)
-
-    return [word_counts_iconicity_sorted_a, word_counts_iconicity_sorted_b]
+    print("START OF QUESTION 5")
+    print("sklearn's linear and clustering classifiers")
+    p5.problem5(balanced_movies)
 
 
 if __name__ == '__main__':

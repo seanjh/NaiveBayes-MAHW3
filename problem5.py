@@ -1,6 +1,4 @@
 from __future__ import division
-import logging
-import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -130,7 +128,7 @@ def five_c(train_features, train_labels, test_features, test_labels):
 
 
 def five_f(train_features, train_labels, test_features, test_labels):
-    n_features = [10, 100, 1000, 10000]
+    n_features = [1, 10, 100, 1000]
     accuracy = []
     # Classify with different feature subsets
     for num in n_features:
@@ -138,8 +136,8 @@ def five_f(train_features, train_labels, test_features, test_labels):
         d_train_feat, d_test_feat = feature_decomposition(transformer, train_features, test_features)
         d_train_feat, d_test_feat = rescale_features(d_train_feat, d_test_feat)
         results = classify(LogisticRegression(),
-                 d_train_feat, train_labels, d_test_feat, test_labels,
-                 "Logistic Regression classification")
+                           d_train_feat, train_labels, d_test_feat, test_labels,
+                           "Logistic Regression classification")
         accuracy.append(get_correct_num(results, test_labels) / len(test_labels))
 
     # Classify with the full feature set
@@ -154,15 +152,19 @@ def five_f(train_features, train_labels, test_features, test_labels):
 
 
 def plot_feature_decomposition(n_features, accuracy):
-    plt.plot(accuracy, n_features)
-    plt.ylabel("# of Features")
+    plt.clf()
+    plt.title("Accuracy as a Function of Feature Vector Size")
+    plt.plot(n_features, accuracy)
+    plt.xticks([10**i for i in range(4, -1, -1)])
+    plt.xlabel("# of Features")
     plt.ylabel("Model Accuracy")
-    plt.show()
+    plt.savefig("dimensionalityAccuracy.png")
 
 
-def main():
-    movies = list(pme.load_all_movies(FILE_NAME))
-    balanced = nb.balance_dataset(movies, BALANCE_NUM)
+def problem5(balanced=None):
+    if balanced is None:
+        movies = list(pme.load_all_movies(FILE_NAME))
+        balanced = nb.balance_dataset(movies, BALANCE_NUM)
     train_movies, test_movies = split_list(balanced, 3)
 
     train_features, train_labels, test_features, test_labels = prepare_features(train_movies, test_movies)
@@ -174,4 +176,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    problem5()
