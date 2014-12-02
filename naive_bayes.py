@@ -384,8 +384,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-
-    # movies = list(pme.load_all_movies(FILE_NAME))
-    # balanced_movies = balance_dataset(movies, 200)
-    # get_decade_word_probs(balanced_movies, 10)
+    main()
