@@ -15,7 +15,7 @@ import naive_bayes as nb
 from process_plots import process_plots_mp
 from config import FILE_NAME, N_FEATURES
 
-TARGET_CUML_VAR_RATIO = 0.65
+TARGET_CUML_VAR_RATIO = 0.90
 
 
 def split_list(full_list, ratio=4):
@@ -71,7 +71,7 @@ def decompose_tsvd_target(train_features, test_features, n_features, target_cuml
 
 
 def classify(classifier, train_features, train_labels, test_features,
-             test_labels, desc="Linear classifer"):
+             test_labels, desc="Linear classifer", rescale=False):
     print "Beginning %s" % desc
     classifier.fit(train_features, train_labels)
     results = classifier.predict(test_features)
@@ -85,7 +85,7 @@ def classify(classifier, train_features, train_labels, test_features,
 def run_linear_classifiers(train_features, train_labels, test_features, test_labels):
     print "Beginning Standardize features by removing the mean and scaling to unit variance"
     if CLASSIFIER_CONFIG.get("SGDC"):
-        classify(SGDClassifier(loss="hinge", penalty="l2"),
+        classify(SGDClassifier(),
                  train_features, train_labels, test_features, test_labels,
                  "Stochastic Gradient Descent")
     if CLASSIFIER_CONFIG.get("PERCEPTRON-L1"):
@@ -99,11 +99,11 @@ def run_linear_classifiers(train_features, train_labels, test_features, test_lab
     if CLASSIFIER_CONFIG.get("Linear-SVC"):
         classify(LinearSVC(),
                  train_features, train_labels, test_features, test_labels,
-                 "Linear Support Vector Classification")
+                 "Linear Support Vector Classification", rescale=True)
     if CLASSIFIER_CONFIG.get("SVC"):
         classify(SVC(kernel='rbf'),
                  train_features, train_labels, test_features, test_labels,
-                 "C-Support Vector Classification (rbf kernel)")
+                 "C-Support Vector Classification (rbf kernel)", rescale=True)
     if CLASSIFIER_CONFIG.get("LOGISTIC"):
         classify(LogisticRegression(),
                  train_features, train_labels, test_features, test_labels,
@@ -120,11 +120,12 @@ def run_clustering_classifiers(train_features, train_labels, test_features, test
 
 
 EXTRACT_CONFIG = {
-    "BALANCED": True,
+    "SAMPLE": 20,
+    "BALANCED": False,
     "HOMEGROWN-DENSE": False,
     "HOMEGROWN": False,
     "FHASING": False,
-    "COUNTVEC": True,
+    "COUNTVEC": False,
     "TFIDFVEC": False
 }
 
@@ -149,6 +150,9 @@ def main():
     if EXTRACT_CONFIG.get("BALANCED"):
         print "Balancing data set"
         movies = nb.balance_dataset(movies, 6000)
+    if EXTRACT_CONFIG.get("SAMPLE"):
+        ignored, movies = split_list(movies, EXTRACT_CONFIG.get("SAMPLE"))
+    print "Beginning linear classifers with %d samples" % len(movies)
 
     if EXTRACT_CONFIG.get("COUNTVEC"):
         print "Extracting features using CountVectorizer"
@@ -182,6 +186,7 @@ def main():
          test_features, test_labels) = feature_extraction(vectorizer, train_counts, test_counts)
 
 
+    print "Original Feature vectors size: %d" % csr_matrix(train_features[-1]).toarray().size
     original_train_features, original_test_features = train_features, test_features
 
     if not EXTRACT_CONFIG.get("FHASING") and FEATURE_CONFIG.get("TSVD"):

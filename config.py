@@ -6,4 +6,4 @@ FILE_NAME = '../plot.list.gz'
 FREQUENCY = False
 
 # Number of features to preserve following decomposition
-N_FEATURES=100
+N_FEATURES=500
