@@ -9,8 +9,9 @@ import matplotlib.pyplot as pyp
 import random
 import math
 import process_plots as pp
-import datetime as dt
-# import process_plots_2 as pp2
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+import pprint
 
 # constants
 BINARY = True
@@ -47,12 +48,15 @@ def balance_dataset(movies, movies_each_decade):
     # print(len(balanced_movies))
     return balanced_movies
 
-def plot_pmf(word, movies):
+def plot_pmf(word, movies, dataset_type):
 
     years = ''
     for movie in movies:
         summary = ' '.join(re.split(NONWORDS, movie['summary'])).lower()
-        if word in summary:
+        if word != '':
+            if word in summary:
+                years += ' ' + str(movie['year'])
+        else:
             years += ' ' + str(movie['year'])
 
     unigram_years = get_unigram(years)
@@ -61,18 +65,24 @@ def plot_pmf(word, movies):
 
     totals = numpy.array([], dtype=float)
     for decade in decades:
-        if decade != 2020:
+        if str(decade) in unigram_years[0].keys():
             totals = numpy.append(totals, unigram_years[0][str(decade)])
         else:
             totals = numpy.append(totals, 0.)
 
-    print(totals)
-
+    pyp.clf()
     pyp.hist(decades, decades, weights=(totals / totals.sum()), align='left')
     pyp.xticks(decades[:-1])
-    pyp.show()
+    pyp.ylabel("PMF")
+    pyp.xlabel("Decades")
 
-    print(get_unigram(years))
+    if word != '':
+        pyp.title('PMF of movies containing "' + word + '" across ' + dataset_type + ' dataset')
+        pyp.savefig("PMF_" + word + "_" + dataset_type + ".png")
+    else:
+        pyp.title('PMF of all movies across ' + dataset_type + ' dataset')
+        pyp.savefig("PMF_all_" + dataset_type + ".png")
+
 
 def likelihood_word_per_decade(word, decade_unigram):
 
@@ -124,18 +134,19 @@ def plot_movie_classification(movie_name, all_movies, list_of_decade_features):
         value = numpy.append(value, decade_value_tuple[1])
     value = numpy.append(value, 0.)
 
+    pyp.clf()
     pyp.hist(decades, decades, weights=value, align='left')
     pyp.xticks(decades[:-1])
     pyp.ylim(value.min() - 100, value[:-1].max() + 100)
-    pyp.show()
+    pyp.title('Prediction for movie "' + movie_name + '" across each decade (in log likelihood)')
+    pyp.xlabel("Decades")
+    pyp.ylabel("Sum of log likelihood")
+    pyp.savefig('Prediction_' + movie_name.replace(' ', '_') + ".png")
 
 
 def naive_bayes(movie, return_type, list_of_decade_features):
 
     summary_words = pp.process_one_plot(movie)[1]
-
-    # print(pp.process_one_plot(movie)[1])
-    # print(pp.process_one_plot(movie)[1].get(u'the'))
 
     decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
     drichlet_prior = math.log10(0.000001)
@@ -170,6 +181,50 @@ def naive_bayes(movie, return_type, list_of_decade_features):
     else:
         return decade_value_pair
 
+def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b):
+    results = pp.process_plots_mp(movies)
+
+    word_counts = dict()
+    number_of_films_per_decade = numpy.zeros(9)
+    for movie in results:
+        movie_ones = dict.fromkeys( movie[1].iterkeys(), 1 )
+        movieResult_ones = pp.MovieResult(movie.year, movie_ones, movie.total)
+        number_of_films_per_decade[(movie.year-1930) / 10] += 1
+        pp.add_plot_counts(word_counts.setdefault(movieResult_ones.year, dict()), movieResult_ones.wordcounts)
+    print(number_of_films_per_decade)
+
+    decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
+    all_word_ever_probs = dict()
+    for d1 in decades:
+        # print(feature)
+        all_word_ever_probs = dict(all_word_ever_probs.items() + features[d1].items())
+
+    all_word_ever_probs = dict.fromkeys(all_word_ever_probs, 10000000)
+
+    word_counts_probs = dict()
+    for d2 in decades:
+        word_probs = {word: (float(count) / number_of_films_per_decade[(d2-1930)/10]) for (word, count) in word_counts.get(d2).iteritems()}
+        word_counts_probs[d2] = word_counts_probs.setdefault(d2, word_probs)
+
+        for decade_word_key in word_counts_probs.get(d2).keys():
+            if word_counts_probs.get(d2)[decade_word_key] < all_word_ever_probs[decade_word_key]:
+                all_word_ever_probs[decade_word_key] = word_counts_probs.get(d2)[decade_word_key]
+
+    iconicity_of_words = dict()
+    word_counts_iconicity_sorted_a = dict()
+    word_counts_iconicity_sorted_b = dict()
+    for d3 in decades:
+        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d3).iteritems()}
+        iconicity_of_words[d3] = iconicity_of_words.setdefault(d3, word_iconicity)
+
+        iconicity_of_words_sorted = sorted(iconicity_of_words[d3].items(), key=lambda x:x[1], reverse=True)
+        top_words_tuple = iconicity_of_words_sorted[:number_of_words_b]
+        top_words_a = [w_a[0] for w_a in top_words_tuple]
+        top_words_b = [w_b[0] for w_b in top_words_tuple[:number_of_words_a]]
+        word_counts_iconicity_sorted_a[d3] = word_counts_iconicity_sorted_a.setdefault(d3, top_words_a)
+        word_counts_iconicity_sorted_b[d3] = word_counts_iconicity_sorted_b.setdefault(d3, top_words_b)
+
+    return [word_counts_iconicity_sorted_a, word_counts_iconicity_sorted_b]
 
 def get_decade_word_probs(movies, number_of_words):
     results = pp.process_plots_mp(movies)
@@ -236,25 +291,26 @@ def get_decade_word_probs(movies, number_of_words):
 
 def main():
 
+    print('loading movies')
     movies = list(pme.load_all_movies(FILE_NAME))
-    print('finish loading movies')
 
-    # plot_pmf('radio', movies)
-    # plot_pmf('beaver', movies)
-    # plot_pmf('the', movies)
+    print("================================================")
+    print("START OF QUESTION 2")
+    print('plotting question 2a to 2d')
+    plot_pmf('', movies, 'entire')
+    plot_pmf('radio', movies, 'entire')
+    plot_pmf('beaver', movies, 'entire')
+    plot_pmf('the', movies, 'entire')
 
-    # balanced_movies = balance_dataset(movies, 6000)
-    balanced_movies = balance_dataset(movies, 100)
-    print('finish balancing movies')
+    print('balancing movie data (6000 per decade)')
+    balanced_movies = balance_dataset(movies, 6000)
 
-    # print(pp.process_plots_mp(balanced_movies)[0])
-    # print(pp.process_plots_mp(balanced_movies)[1])
+    print('plotting question 2e to 2g')
+    plot_pmf('radio', balanced_movies, 'balanced')
+    plot_pmf('beaver', balanced_movies, 'balanced')
+    plot_pmf('the', balanced_movies, 'balanced')
 
-    # print(pp.get_training_classifier(pp.get_movie_features(balanced_movies))[1930])
-    # plot_pmf('radio', balanced_movies)
-    # plot_pmf('beaver', balanced_movies)
-    # plot_pmf('the', balanced_movies)
-
+    print('splitting training/test movies')
     count = 0
     test_movies = list([])
     training_movies = list([])
@@ -266,47 +322,42 @@ def main():
             training_movies.append(balanced_movie)
         count += 1
 
-    print('finish splitting training/test movies')
-
+    print('getting all decade features from process plots')
     list_of_decade_features = pp.get_training_classifier(pp.get_movie_features(training_movies))
 
-    prfint('finish getting all decade unigrams from process plots')
+    print('plotting question 2j')
+    plot_movie_classification("Finding Nemo", movies, list_of_decade_features)
+    plot_movie_classification("The Matrix", movies, list_of_decade_features)
+    plot_movie_classification("Gone with the Wind", movies, list_of_decade_features)
+    plot_movie_classification("Harry Potter and the Goblet of Fire", movies, list_of_decade_features)
+    plot_movie_classification("Avatar", movies, list_of_decade_features)
 
-    # print(pp.process_one_plot(movies[0]))
-    # print(pp.get_movie_features(training_movies).get(1930))
-
-    # plot_movie_classification("Finding Nemo", movies, list_of_decade_features)
-    # plot_movie_classification("The Matrix", movies, list_of_decade_unigrams)
-    # plot_movie_classification("Gone with the Wind", movies, list_of_decade_unigrams)
-    # plot_movie_classification("Harry Potter and the Goblet of Fire", movies, list_of_decade_unigrams)
-    # plot_movie_classification("Avatar", movies, list_of_decade_unigrams)
-
-    print(dt.datetime.now())
+    print("starting classifier")
     classification_result = rank_classification(test_movies, list_of_decade_features)
     guess_number = [x[2] for x in classification_result]
     guesses_dict = dict((i, guess_number.count(i)) for i in guess_number)
     guesses_dict[9] = 0
 
-    print("The Naive-Bayes Classification 2 correctly classifies " + str(guesses_dict[0]) + " out of " +
+    print("The Naive-Bayes Classification correctly classifies " + str(guesses_dict[0]) + " out of " +
           str(len(test_movies)))
 
-    print(guesses_dict)
+    print('plotting cumulative match curve')
+    ones = numpy.ones(10)
+    n, bins, patches = pyp.hist(numpy.array(guesses_dict.keys()) + ones, numpy.array(guesses_dict.keys()) + ones,
+                                weights=(numpy.array(guesses_dict.values()) / float(sum(guesses_dict.values()))),
+                                align='left', cumulative=True, color='w')
 
-    print(dt.datetime.now())
-
-    # ones = numpy.ones(10)
-    # n, bins, patches = pyp.hist(numpy.array(guesses_dict.keys()) + ones, numpy.array(guesses_dict.keys()) + ones,
-    #                             weights=(numpy.array(guesses_dict.values()) / float(sum(guesses_dict.values()))),
-    #                             align='left', cumulative=True, color='w')
-    #
-    # pyp.plot(bins[:-1], n, '-o')
-    # pyp.xticks((numpy.array(guesses_dict.keys()) + ones)[:-1])
+    pyp.clf()
+    pyp.plot(bins[:-1], n, '-o')
+    pyp.xticks((numpy.array(guesses_dict.keys()) + ones)[:-1])
+    pyp.title("Cumulative match curve")
+    pyp.xlabel("Number of guesses")
+    pyp.ylabel("Guesses right")
+    pyp.savefig("Cumulative_match_curve.png")
     # pyp.show()
 
-
-    confusionMatrix = numpy.zeros ((9, 9))
-    # confusionMatrix[0][0] = 1
-
+    print('plotting confusion matrix')
+    confusionMatrix = numpy.zeros((9, 9))
 
     for result in classification_result:
         actualYear = (result[1] - 1930) / 10
@@ -317,7 +368,81 @@ def main():
     print(confusionMatrix)
     print("The decades most confused with each other is " + str((confusionMatrix.argmax() % 9) * 10 + 1930) + " to " +
           str((confusionMatrix.argmax() / 9) * 10 + 1930))
+    print("END OF QUESTION 2")
+    print("================================================")
+    print("START OF QUESTION 3")
+    print("getting 10 most iconic words per decade")
+    list_of_decade_features_all = pp.get_training_classifier(pp.get_movie_features(balanced_movies))
+    iconic_words = get_decade_word_probs(balanced_movies, list_of_decade_features_all, 10, 100)
+    iconic_words_10 = iconic_words[0]
+    pprint.pprint(iconic_words_10)
 
+    print("getting 100 most iconic words per decade")
+    iconic_words_100 = iconic_words[1]
+
+    print("removing iconic words from balanced movies")
+    balanced_movies_q3 = balanced_movies
+    for movie_q3 in balanced_movies_q3:
+        for word in iconic_words_100[movie_q3['year']]:
+            movie_q3['summary'] = movie_q3['summary'].replace(word.encode('ascii','ignore'), '')
+
+    print("classifying movies without iconic words")
+    print('splitting training/test movies')
+    count = 0
+    test_movies_q3 = list([])
+    training_movies_q3 = list([])
+
+    for balanced_movie_q3 in balanced_movies_q3:
+        if count % 3 == 0:
+            test_movies_q3.append(balanced_movie_q3)
+        else:
+            training_movies_q3.append(balanced_movie_q3)
+        count += 1
+
+    print('getting all decade features from process plots')
+    list_of_decade_features_q3 = pp.get_training_classifier(pp.get_movie_features(training_movies_q3))
+
+    print("starting classifier")
+    classification_result = rank_classification(test_movies_q3, list_of_decade_features_q3)
+    guess_number = [x[2] for x in classification_result]
+    guesses_dict = dict((i, guess_number.count(i)) for i in guess_number)
+    guesses_dict[9] = 0
+
+    print("The Naive-Bayes Classification without iconic words correctly classifies " + str(guesses_dict[0]) + " out of " +
+          str(len(test_movies_q3)))
+
+    print("END OF QUESTION 3")
+    print("================================================")
+    print("START OF QUESTION 4")
+    print("classifying movies using sklearn")
+
+    balanced_movies = balance_dataset(movies, 3000)
+
+    v = CountVectorizer(decode_error='ignore')
+    summary_list = numpy.array([movie_dict['summary'] for movie_dict in balanced_movies])
+    year_list = numpy.array([movie_dict2['year'] for movie_dict2 in balanced_movies])
+    summary_vectorized = v.fit_transform(summary_list).toarray()
+
+    test_x = []
+    train_x = []
+    test_y = []
+    train_y = []
+
+    for i in range(0, len(summary_vectorized)):
+        if i % 3 == 0:
+            test_x.append(summary_vectorized[i])
+            test_y.append(year_list[i])
+        else:
+            train_x.append(summary_vectorized[i])
+            train_y.append(year_list[i])
+    clf = MultinomialNB()
+    clf.fit(train_x, train_y)
+    pred_y = clf.predict(test_x)
+
+    print("The SKLearn Naive-Bayes Classification correctly classifies " + str((pred_y == test_y).sum()) + " out of " +
+          str(len(test_y)))
+    print("END OF QUESTION 4")
+    print("================================================")
 
 
 if __name__ == '__main__':
