@@ -1,4 +1,6 @@
 from __future__ import division
+import logging
+import datetime
 
 import numpy as np
 from scipy.sparse import issparse, csr_matrix
@@ -13,9 +15,15 @@ from sklearn.preprocessing import StandardScaler
 import parse_movies_example as pme
 import naive_bayes as nb
 from process_plots import process_plots_mp
-from config import FILE_NAME, N_FEATURES
+from config import FILE_NAME, N_FEATURES, BALANCE_NUM, LOGGER
 
-TARGET_CUML_VAR_RATIO = 0.90
+TARGET_CUML_VAR_RATIO = 0.85
+
+logStart = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+logging.basicConfig(
+    filename='logs/%s_problem5.log' % logStart,
+    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 
 def split_list(full_list, ratio=4):
@@ -61,10 +69,12 @@ def feature_decomposition(transformer, train_features, test_features, print_var_
     return train_dfeatures, transformer.transform(test_features)
 
 
-def decompose_tsvd_target(train_features, test_features, n_features, target_cuml_var_ratio=TARGET_CUML_VAR_RATIO):
+def decompose_tsvd_target(train_features, test_features, n_features,
+                          target_cuml_var_ratio=TARGET_CUML_VAR_RATIO):
     print "Beginning Dimensionality reduction using truncated SVD (%d features)" % n_features
     transformer = TruncatedSVD(n_components=n_features)
-    train_d, test_d = feature_decomposition(transformer, train_features, test_features, print_var_ratio=True)
+    train_d, test_d = feature_decomposition(transformer, train_features,
+                                            test_features, print_var_ratio=True)
     if sum(transformer.explained_variance_ratio_) < target_cuml_var_ratio:
         decompose_tsvd_target(train_features, test_features, n_features*2, target_cuml_var_ratio)
     return transformer, train_d, test_d
@@ -99,11 +109,11 @@ def run_linear_classifiers(train_features, train_labels, test_features, test_lab
     if CLASSIFIER_CONFIG.get("Linear-SVC"):
         classify(LinearSVC(),
                  train_features, train_labels, test_features, test_labels,
-                 "Linear Support Vector Classification", rescale=True)
+                 "Linear Support Vector Classification")
     if CLASSIFIER_CONFIG.get("SVC"):
         classify(SVC(kernel='rbf'),
                  train_features, train_labels, test_features, test_labels,
-                 "C-Support Vector Classification (rbf kernel)", rescale=True)
+                 "C-Support Vector Classification (rbf kernel)")
     if CLASSIFIER_CONFIG.get("LOGISTIC"):
         classify(LogisticRegression(),
                  train_features, train_labels, test_features, test_labels,
@@ -149,7 +159,7 @@ def main():
     movies = list(pme.load_all_movies(FILE_NAME))
     if EXTRACT_CONFIG.get("BALANCED"):
         print "Balancing data set"
-        movies = nb.balance_dataset(movies, 6000)
+        movies = nb.balance_dataset(movies, BALANCE_NUM)
     if EXTRACT_CONFIG.get("SAMPLE"):
         ignored, movies = split_list(movies, EXTRACT_CONFIG.get("SAMPLE"))
     print "Beginning linear classifers with %d samples" % len(movies)

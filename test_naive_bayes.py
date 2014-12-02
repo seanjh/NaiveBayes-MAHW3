@@ -1,4 +1,6 @@
 from __future__ import division
+import logging
+import datetime
 
 import numpy as np
 from sklearn.naive_bayes import MultinomialNB
@@ -7,15 +9,21 @@ from sklearn.feature_extraction import DictVectorizer
 import naive_bayes as nb
 import parse_movies_example as pme
 from process_plots import get_movie_features, get_training_classifier, process_plots_mp
-from config import FILE_NAME
+from config import FILE_NAME, BALANCE_NUM, LOGGER
+
+logStart = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+logging.basicConfig(
+    filename='logs/%s_naivebayes.log' % logStart,
+    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 
 def print_top_features(features, num):
     for year, words in features.iteritems():
         ordered = sorted(words.items(), key=lambda t: t[1], reverse=True)
-        print 'Decade %s' % str(year)
+        LOGGER.info('Decade %s' % str(year))
         for word in ordered[:num]:
-            print '\t%s' % str(word)
+            LOGGER.info('\t%s' % str(word))
 
 
 def test_homegrown_nb(balanced):
@@ -27,9 +35,9 @@ def test_homegrown_nb(balanced):
 
     results = nb.rank_classification(test_movies, classifier)
     correct = sum([1 for result in results if result[0][0] == result[1]])
-    print "NB classifier predicted %d/%d correctly (%0.3f%% accuracy)" % (
+    LOGGER.info("NB classifier predicted %d/%d correctly (%0.3f%% accuracy)" % (
         correct, len(results), correct / len(results) * 100
-    )
+    ))
 
 
 def test_sklearn_nb(balanced):
@@ -51,14 +59,14 @@ def test_sklearn_nb(balanced):
     results = mnb_classifier.predict(test_features)
 
     correct = sum([1 for i, result in enumerate(results) if result == test_labels[i]])
-    print "skleanrn's MultinomialNB classifier predicted %d/%d correctly (%0.3f%% accuracy)" % (
+    LOGGER.info("skleanrn's MultinomialNB classifier predicted %d/%d correctly (%0.3f%% accuracy)" % (
         correct, len(test_labels), correct / len(test_labels) * 100
-    )
+    ))
 
 
 def main():
     movies = list(pme.load_all_movies(FILE_NAME))
-    balanced = nb.balance_dataset(movies, 6000)
+    balanced = nb.balance_dataset(movies, BALANCE_NUM)
     test_homegrown_nb(balanced)
     test_sklearn_nb(balanced)
 

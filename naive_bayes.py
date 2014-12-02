@@ -270,7 +270,7 @@ def main():
 
     list_of_decade_features = pp.get_training_classifier(pp.get_movie_features(training_movies))
 
-    print('finish getting all decade unigrams from process plots')
+    prfint('finish getting all decade unigrams from process plots')
 
     # print(pp.process_one_plot(movies[0]))
     # print(pp.get_movie_features(training_movies).get(1930))
