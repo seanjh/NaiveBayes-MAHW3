@@ -2,7 +2,7 @@ __author__ = 'muhammadkhadafi'
 
 import re
 import parse_movies_example as pme
-from config import FILE_NAME
+from config import FILE_NAME, BALANCE_NUM
 from nltk.corpus import stopwords
 import numpy
 import matplotlib.pyplot as pyp
@@ -28,6 +28,7 @@ def freq(lst):
         freq[ele] += 1
     return (freq, length)
 
+
 def get_unigram(summary):
     return freq(summary.split())
 
@@ -47,6 +48,7 @@ def balance_dataset(movies, movies_each_decade):
 
     # print(len(balanced_movies))
     return balanced_movies
+
 
 def plot_pmf(word, movies, dataset_type):
 
@@ -92,6 +94,7 @@ def likelihood_word_per_decade(word, decade_unigram):
         return float(decade_unigram[0][word]) / float(decade_unigram[1])
     else:
         return drichlet_prior
+
 
 def rank_classification(test_movies, list_of_decade_features):
 
@@ -181,52 +184,6 @@ def naive_bayes(movie, return_type, list_of_decade_features):
     else:
         return decade_value_pair
 
-def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b):
-    results = pp.process_plots_mp(movies)
-
-    word_counts = dict()
-    number_of_films_per_decade = numpy.zeros(9)
-    for movie in results:
-        movie_ones = dict.fromkeys( movie[1].iterkeys(), 1 )
-        movieResult_ones = pp.MovieResult(movie.year, movie_ones, movie.total)
-        number_of_films_per_decade[(movie.year-1930) / 10] += 1
-        pp.add_plot_counts(word_counts.setdefault(movieResult_ones.year, dict()), movieResult_ones.wordcounts)
-    print(number_of_films_per_decade)
-
-    decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
-    all_word_ever_probs = dict()
-    for d1 in decades:
-        # print(feature)
-        all_word_ever_probs = dict(all_word_ever_probs.items() + features[d1].items())
-
-    all_word_ever_probs = dict.fromkeys(all_word_ever_probs, 10000000)
-
-    word_counts_probs = dict()
-    for d2 in decades:
-        word_probs = {word: (float(count) / number_of_films_per_decade[(d2-1930)/10]) for (word, count) in word_counts.get(d2).iteritems()}
-        word_counts_probs[d2] = word_counts_probs.setdefault(d2, word_probs)
-
-        for decade_word_key in word_counts_probs.get(d2).keys():
-            if word_counts_probs.get(d2)[decade_word_key] < all_word_ever_probs[decade_word_key]:
-                all_word_ever_probs[decade_word_key] = word_counts_probs.get(d2)[decade_word_key]
-
-    iconicity_of_words = dict()
-    word_counts_iconicity_sorted_a = dict()
-    word_counts_iconicity_sorted_b = dict()
-    for d3 in decades:
-        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d3).iteritems()}
-        iconicity_of_words[d3] = iconicity_of_words.setdefault(d3, word_iconicity)
-
-        iconicity_of_words_sorted = sorted(iconicity_of_words[d3].items(), key=lambda x:x[1], reverse=True)
-        top_words_tuple = iconicity_of_words_sorted[:number_of_words_b]
-        top_words_a = [w_a[0] for w_a in top_words_tuple]
-        top_words_b = [w_b[0] for w_b in top_words_tuple[:number_of_words_a]]
-        word_counts_iconicity_sorted_a[d3] = word_counts_iconicity_sorted_a.setdefault(d3, top_words_a)
-        word_counts_iconicity_sorted_b[d3] = word_counts_iconicity_sorted_b.setdefault(d3, top_words_b)
-
-    return [word_counts_iconicity_sorted_a, word_counts_iconicity_sorted_b]
-
-
 def main():
 
     print('loading movies')
@@ -240,8 +197,8 @@ def main():
     plot_pmf('beaver', movies, 'entire')
     plot_pmf('the', movies, 'entire')
 
-    print('balancing movie data (6000 per decade)')
-    balanced_movies = balance_dataset(movies, 6000)
+    print('balancing movie data (%d per decade)' % BALANCE_NUM)
+    balanced_movies = balance_dataset(movies, BALANCE_NUM)
 
     print('plotting question 2e to 2g')
     plot_pmf('radio', balanced_movies, 'balanced')
@@ -276,8 +233,10 @@ def main():
     guesses_dict = dict((i, guess_number.count(i)) for i in guess_number)
     guesses_dict[9] = 0
 
-    print("The Naive-Bayes Classification correctly classifies " + str(guesses_dict[0]) + " out of " +
-          str(len(test_movies)))
+    correct_num = guesses_dict[0]
+    print("The Naive-Bayes Classification correctly classifies %d out of %d (%0.3f%% accuracy)" % (
+        correct_num, len(test_movies), float(correct_num) / len(test_movies) * 100
+    ))
 
     print('plotting cumulative match curve')
     ones = numpy.ones(10)
@@ -346,15 +305,17 @@ def main():
     guesses_dict = dict((i, guess_number.count(i)) for i in guess_number)
     guesses_dict[9] = 0
 
-    print("The Naive-Bayes Classification without iconic words correctly classifies " + str(guesses_dict[0]) + " out of " +
-          str(len(test_movies_q3)))
+    correct_num = guesses_dict[0]
+    print("The Naive-Bayes Classification without iconic words correctly classifies %d out of %d (%0.3f%% accuracy)" % (
+        correct_num, len(test_movies_q3), float(correct_num) / len(test_movies_q3) * 100
+    ))
 
     print("END OF QUESTION 3")
     print("================================================")
     print("START OF QUESTION 4")
     print("classifying movies using sklearn")
 
-    balanced_movies = balance_dataset(movies, 3000)
+    balanced_movies = balance_dataset(movies, BALANCE_NUM)
 
     v = CountVectorizer(decode_error='ignore')
     summary_list = numpy.array([movie_dict['summary'] for movie_dict in balanced_movies])
@@ -377,10 +338,58 @@ def main():
     clf.fit(train_x, train_y)
     pred_y = clf.predict(test_x)
 
-    print("The SKLearn Naive-Bayes Classification correctly classifies " + str((pred_y == test_y).sum()) + " out of " +
-          str(len(test_y)))
+    correct_num = (pred_y == test_y).sum()
+    print("The SKLearn Naive-Bayes Classification correctly classifies %d out of %d (%0.3f%% accuracy)" % (
+        correct_num, len(test_y), float(correct_num) / len(test_y) * 100
+    ))
     print("END OF QUESTION 4")
     print("================================================")
+
+
+def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b):
+    results = pp.process_plots_mp(movies)
+
+    word_counts = dict()
+    number_of_films_per_decade = numpy.zeros(9)
+    for movie in results:
+        movie_ones = dict.fromkeys( movie[1].iterkeys(), 1 )
+        movieResult_ones = pp.MovieResult(movie.year, movie_ones, movie.total)
+        number_of_films_per_decade[(movie.year-1930) / 10] += 1
+        pp.add_plot_counts(word_counts.setdefault(movieResult_ones.year, dict()), movieResult_ones.wordcounts)
+    print(number_of_films_per_decade)
+
+    decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
+    all_word_ever_probs = dict()
+    for d1 in decades:
+        # print(feature)
+        all_word_ever_probs = dict(all_word_ever_probs.items() + features[d1].items())
+
+    all_word_ever_probs = dict.fromkeys(all_word_ever_probs, 10000000)
+
+    word_counts_probs = dict()
+    for d2 in decades:
+        word_probs = {word: (float(count) / number_of_films_per_decade[(d2-1930)/10]) for (word, count) in word_counts.get(d2).iteritems()}
+        word_counts_probs[d2] = word_counts_probs.setdefault(d2, word_probs)
+
+        for decade_word_key in word_counts_probs.get(d2).keys():
+            if word_counts_probs.get(d2)[decade_word_key] < all_word_ever_probs[decade_word_key]:
+                all_word_ever_probs[decade_word_key] = word_counts_probs.get(d2)[decade_word_key]
+
+    iconicity_of_words = dict()
+    word_counts_iconicity_sorted_a = dict()
+    word_counts_iconicity_sorted_b = dict()
+    for d3 in decades:
+        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d3).iteritems()}
+        iconicity_of_words[d3] = iconicity_of_words.setdefault(d3, word_iconicity)
+
+        iconicity_of_words_sorted = sorted(iconicity_of_words[d3].items(), key=lambda x:x[1], reverse=True)
+        top_words_tuple = iconicity_of_words_sorted[:number_of_words_b]
+        top_words_b = [w_b[0] for w_b in top_words_tuple]
+        top_words_a = [w_a[0] for w_a in top_words_tuple[:number_of_words_a]]
+        word_counts_iconicity_sorted_a[d3] = word_counts_iconicity_sorted_a.setdefault(d3, top_words_a)
+        word_counts_iconicity_sorted_b[d3] = word_counts_iconicity_sorted_b.setdefault(d3, top_words_b)
+
+    return [word_counts_iconicity_sorted_a, word_counts_iconicity_sorted_b]
 
 
 if __name__ == '__main__':
