@@ -9,7 +9,6 @@ from nltk.corpus import stopwords
 
 from config import FREQUENCY
 
-ALPHA = 1
 BASE_LOG_PROBABILITY = math.log10(0.0001)
 STOP_WORDS = frozenset(stopwords.words('english'))
 PUNCTUATION = frozenset(string.punctuation)

@@ -192,11 +192,10 @@ def test_sklearn_nb(train, test):
     ))
 
 
-def split_dataset(movies, ratio=TRAIN_TEST_RATIO):
-    print('splitting training/test movies (%d train to test ratio)' % ratio)
-    assert ratio > 0
-    sep = int(float(ratio - 1) / ratio) * len(movies)
-    return [movies[i] for i in range(0, sep)], [movies[i] for i in range(sep, len(movies))]
+def split_list(full_list, ratio=TRAIN_TEST_RATIO):
+    print('splitting training/test movies (%d/1 = train/test ratio)' % ratio)
+    return ([full_list[i] for i in range(len(full_list)) if i % ratio != 0],
+            [full_list[i] for i in range(len(full_list)) if i % ratio == 0])
 
 
 def classify(test_movies, classifier):
@@ -245,7 +244,7 @@ def main():
     print('plotting question 2e to 2g')
     pnb.plot2eg(balanced_movies)
 
-    training_movies, test_movies = split_dataset(balanced_movies)
+    training_movies, test_movies = split_list(balanced_movies)
 
     print('getting all decade features from process plots (i.e., training classifier)')
     list_of_decade_features = pm.get_training_classifier(pm.get_movie_features(training_movies))
@@ -275,7 +274,7 @@ def main():
 
     print("classifying movies without iconic words")
     print('splitting training/test movies')
-    training_movies_q3, test_movies_q3 = split_dataset(balanced_movies_q3)
+    training_movies_q3, test_movies_q3 = split_list(balanced_movies_q3)
 
     print('getting all decade features from process plots')
     list_of_decade_features_q3 = pm.get_training_classifier(pm.get_movie_features(training_movies_q3))

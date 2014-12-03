@@ -17,11 +17,6 @@ from config import FILE_NAME, N_FEATURES, TARGET_CUM_VAR_RATIO, BALANCE_NUM, LOG
 set_file_logger('problem5')
 
 
-def split_list(full_list, ratio=4):
-    return ([full_list[i] for i in range(len(full_list)) if i % ratio != 0],
-            [full_list[i] for i in range(len(full_list)) if i % ratio == 0])
-
-
 def feature_extraction_sklearn(vectorizer, train, test):
     train_features = vectorizer.fit_transform([movie.get('summary') for movie in train])
     train_labels = np.array([movie.get('year') for movie in train])
@@ -167,7 +162,7 @@ def problem5(balanced=None):
     if balanced is None:
         movies = list(pme.load_all_movies(FILE_NAME))
         balanced = nb.balance_dataset(movies, BALANCE_NUM)
-    train_movies, test_movies = split_list(balanced, 3)
+    train_movies, test_movies = nb.split_list(balanced)
 
     train_features, train_labels, test_features, test_labels = prepare_features(train_movies, test_movies)
     original_train_features, original_test_features = list(train_features), list(test_features)
