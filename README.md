@@ -6,7 +6,7 @@ Relevant code for each of the 4 programming problems is contained in numbered pr
 
     python problem2.py
 
-Matplotlib plots are saved to the /plots directory.
+A valid path to the source plot summary data (gzipped) must be provided in config.py. This config.py file also provides the capability to control the number of plot summary samples to include from each decade in the balanced data set (default=6000), and other various execution settings.
 
 ### Dependencies
 Project dependencies are frozen in requirements.txt. To install these dependencies, execute the following pip command.
