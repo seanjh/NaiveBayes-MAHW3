@@ -21,7 +21,7 @@ FREQUENCY = False
 N_FEATURES = 500
 
 # Target cumulative sum of variance ratio.
-TARGET_CUM_VAR_RATIO = 0.65
+TARGET_CUM_VAR_RATIO = 0.75
 
 # Set up some helper directories (if necessary)
 _cur_path = os.path.abspath(os.path.abspath(__file__))

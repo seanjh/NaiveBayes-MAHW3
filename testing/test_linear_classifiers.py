@@ -1,6 +1,4 @@
 from __future__ import division
-import logging
-import datetime
 
 import numpy as np
 from scipy.sparse import issparse, csr_matrix
@@ -8,23 +6,18 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC, SVC
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, HashingVectorizer
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.decomposition import TruncatedSVD, RandomizedPCA
+from sklearn.decomposition import TruncatedSVD
 from sklearn.linear_model import SGDClassifier, Perceptron, LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
-import parse_movies_example as pme
-import naive_bayes as nb
-from process_summaries import process_plots_mp
-from config import FILE_NAME, N_FEATURES, BALANCE_NUM, LOGGER
+import MAHW3.parse_movies_example as pme
+import MAHW3.naive_bayes as nb
+from MAHW3.process_summaries import process_plots_mp
+from MAHW3.config import FILE_NAME, N_FEATURES, BALANCE_NUM, LOGGER, set_file_logger
 
 TARGET_CUML_VAR_RATIO = 0.85
 
-logStart = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-logging.basicConfig(
-    filename='logs/%s_problem5.log' % logStart,
-    level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s'
-)
-
+set_file_logger("test_linearclassifiers")
 
 def split_list(full_list, ratio=4):
     return ([full_list[i] for i in range(len(full_list)) if i % ratio != 0],

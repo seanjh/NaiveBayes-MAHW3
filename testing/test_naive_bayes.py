@@ -1,16 +1,13 @@
 from __future__ import division
-import logging
-import datetime
 
 import numpy as np
-from scipy.sparse import issparse, csr_matrix
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction import DictVectorizer
 
-import naive_bayes as nb
-import parse_movies_example as pme
-from process_summaries import get_movie_features, get_training_classifier, process_plots_mp
-from config import FILE_NAME, BALANCE_NUM, LOGGER, set_file_logger
+import MAHW3.naive_bayes as nb
+import MAHW3.parse_movies_example as pme
+from MAHW3.process_summaries import get_movie_features, get_training_classifier, process_plots_mp
+from MAHW3.config import FILE_NAME, BALANCE_NUM, LOGGER, set_file_logger
 
 set_file_logger("test_naivebayes")
 
