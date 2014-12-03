@@ -9,7 +9,7 @@ from sklearn.feature_extraction import DictVectorizer
 
 import naive_bayes as nb
 import parse_movies_example as pme
-from process_plots import get_movie_features, get_training_classifier, process_plots_mp
+from process_summaries import get_movie_features, get_training_classifier, process_plots_mp
 from config import FILE_NAME, BALANCE_NUM, LOGGER, set_file_logger
 
 set_file_logger("test_naivebayes")

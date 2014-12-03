@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 
 import parse_movies_example as pme
 import naive_bayes as nb
-from process_plots import process_plots_mp
+from process_summaries import process_plots_mp
 from config import FILE_NAME, N_FEATURES, BALANCE_NUM, LOGGER
 
 TARGET_CUML_VAR_RATIO = 0.85

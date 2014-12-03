@@ -160,7 +160,7 @@ def plot_feature_decomposition(n_features, accuracy):
     ax.set_xscale("log", nonposx='clip')
     plt.xlabel("# of Features")
     plt.ylabel("Model Accuracy")
-    plt.savefig("dimensionalityAccuracy.png")
+    plt.savefig("plots/dimensionality_accuracy.png")
 
 
 def problem5(balanced=None):
@@ -170,7 +170,7 @@ def problem5(balanced=None):
     train_movies, test_movies = split_list(balanced, 3)
 
     train_features, train_labels, test_features, test_labels = prepare_features(train_movies, test_movies)
-    original_train_features, original_test_features = train_features, test_features
+    original_train_features, original_test_features = list(train_features), list(test_features)
 
     train_features, train_labels, test_features, test_labels = five_ab(train_features, train_labels, test_features, test_labels)
     five_c(train_features, train_labels, test_features, test_labels)
