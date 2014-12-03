@@ -1,8 +1,6 @@
 import re
-import pprint
 import random
 import math
-import copy
 
 import numpy
 import process_summaries as pm
@@ -10,11 +8,8 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.naive_bayes import MultinomialNB
 
-from config import FILE_NAME, BALANCE_NUM
+from config import FILE_NAME
 import parse_movies_example as pme
-import plot_nb as pnb
-import problem5 as p5
-
 
 # constants
 TRAIN_TEST_RATIO = 3
@@ -230,75 +225,3 @@ def remove_iconic_words(movies, iconic_words_100):
     for movie_q3 in movies:
         for word in iconic_words_100[movie_q3['year']]:
             movie_q3['summary'] = movie_q3['summary'].replace(word.encode('ascii', 'ignore'), '')
-
-
-def main():
-    print('loading movies')
-    movies = list(pme.load_all_movies(FILE_NAME))
-    print("================================================")
-
-    print("START OF QUESTION 2")
-
-    print('plotting question 2a to 2d')
-    pnb.plot2ad(movies)
-
-    print('balancing movie data (%d per decade)' % BALANCE_NUM)
-    balanced_movies = balance_dataset(movies, BALANCE_NUM)
-
-    print('plotting question 2e to 2g')
-    pnb.plot2eg(balanced_movies)
-
-    training_movies, test_movies = split_list(balanced_movies)
-
-    print('getting all decade features from process plots (i.e., training classifier)')
-    list_of_decade_features = pm.get_training_classifier(pm.get_movie_features(training_movies))
-
-    pnb.plot_2j(movies, list_of_decade_features)
-
-    print("applying classifier")
-    guesses_dict, classification_results = predict_nb(test_movies, list_of_decade_features)
-
-    print('plotting cumulative match curve')
-    pnb.plot_2l(guesses_dict)
-
-    print('plotting confusion matrix')
-    pnb.plot_confusion_matrix(classification_results)
-
-    print("END OF QUESTION 2")
-    print("================================================")
-
-    print("START OF QUESTION 3")
-    print("getting 10 most iconic words per decade")
-    iconic_words_10, iconic_words_100 = get_iconic_words(balanced_movies)
-    pprint.pprint(iconic_words_10)
-
-    print("removing iconic words from balanced movies")
-    balanced_movies_q3 = copy.deepcopy(balanced_movies)
-    remove_iconic_words(balanced_movies_q3, iconic_words_100)
-
-    print("classifying movies without iconic words")
-    training_movies_q3, test_movies_q3 = split_list(balanced_movies_q3)
-    print('getting all decade features from process plots (i.e., training classifier)')
-    list_of_decade_features_q3 = pm.get_training_classifier(pm.get_movie_features(training_movies_q3))
-
-    print("applying classifier")
-    predict_nb(test_movies_q3, list_of_decade_features_q3)
-
-    print("END OF QUESTION 3")
-    print("================================================")
-
-    print("START OF QUESTION 4")
-    print("classifying movies using sklearn")
-
-    test_sklearn_nb(training_movies, test_movies)
-
-    print("END OF QUESTION 4")
-    print("================================================")
-
-    print("START OF QUESTION 5")
-    print("sklearn's linear and clustering classifiers")
-    p5.problem5(training_movies, test_movies)
-
-
-if __name__ == '__main__':
-    main()
