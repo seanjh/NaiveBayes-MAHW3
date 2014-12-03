@@ -8,11 +8,9 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.naive_bayes import MultinomialNB
 
-from config import FILE_NAME
-import parse_movies_example as pme
+from config import TRAIN_TEST_RATIO
 
 # constants
-TRAIN_TEST_RATIO = 3
 BINARY = True
 NONWORDS = re.compile('[\W_]+')
 STOPWORDS = stopwords.words('english')

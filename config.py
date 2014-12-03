@@ -11,6 +11,9 @@ FILE_NAME = '../plot.list.gz'
 # for any single decade.
 BALANCE_NUM = 6000
 
+# Ratio of training to test moves
+TRAIN_TEST_RATIO = 3
+
 # FREQUENCY controls whether to build features from
 # word occurrence (word count) or word frequency
 # (word count/total count) for each summary
