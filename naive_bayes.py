@@ -297,7 +297,7 @@ def main():
 
     print("START OF QUESTION 5")
     print("sklearn's linear and clustering classifiers")
-    p5.problem5(balanced_movies)
+    p5.problem5(training_movies, test_movies)
 
 
 if __name__ == '__main__':

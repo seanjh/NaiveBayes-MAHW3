@@ -1,4 +1,5 @@
 from __future__ import division
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -158,16 +159,17 @@ def plot_feature_decomposition(n_features, accuracy):
     plt.savefig("plots/dimensionality_accuracy.png")
 
 
-def problem5(balanced=None):
-    if balanced is None:
+def problem5(train_movies=None, test_movies=None):
+    if train_movies is None or test_movies is None:
         movies = list(pme.load_all_movies(FILE_NAME))
         balanced = nb.balance_dataset(movies, BALANCE_NUM)
-    train_movies, test_movies = nb.split_list(balanced)
+        train_movies, test_movies = nb.split_list(balanced)
 
     train_features, train_labels, test_features, test_labels = prepare_features(train_movies, test_movies)
-    original_train_features, original_test_features = list(train_features), list(test_features)
+    original_train_features, original_test_features = copy.deepcopy(train_features), copy.deepcopy(test_features)
 
-    train_features, train_labels, test_features, test_labels = five_ab(train_features, train_labels, test_features, test_labels)
+    train_features, train_labels, test_features, test_labels = five_ab(train_features, train_labels,
+                                                                       test_features, test_labels)
     five_c(train_features, train_labels, test_features, test_labels)
     five_f(original_train_features, train_labels, original_test_features, test_labels)
 
