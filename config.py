@@ -24,19 +24,19 @@ N_FEATURES = 500
 TARGET_CUM_VAR_RATIO = 0.65
 
 # Set up some helper directories (if necessary)
-cur_path = os.path.abspath(os.path.abspath(__file__))
-log_path = os.path.abspath(os.path.join(cur_path, '..', 'logs'))
-plot_path = os.path.abspath(os.path.join(cur_path, '..', 'plots'))
-if not os.path.exists(log_path):
-        os.mkdir(log_path)
-if not os.path.exists(plot_path):
-    os.mkdir(plot_path)
+_cur_path = os.path.abspath(os.path.abspath(__file__))
+_log_path = os.path.abspath(os.path.join(_cur_path, '..', 'logs'))
+_plot_path = os.path.abspath(os.path.join(_cur_path, '..', 'plots'))
+if not os.path.exists(_log_path):
+        os.mkdir(_log_path)
+if not os.path.exists(_plot_path):
+    os.mkdir(_plot_path)
 
 # Logging config
-LOG_LEVEL = logging.DEBUG
+_log_level = logging.DEBUG
 
 LOGGER = logging.getLogger('HW3')
-LOGGER.setLevel(LOG_LEVEL)
+LOGGER.setLevel(_log_level)
 _formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 _ch = logging.StreamHandler()
 _ch.setFormatter(_formatter)

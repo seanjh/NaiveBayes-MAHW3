@@ -24,13 +24,13 @@ STOPWORDS = stopwords.words('english')
 
 
 def freq(lst):
-    freq = {}
+    freq_dict = {}
     length = len(lst)
     for ele in lst:
-        if ele not in freq:
-            freq[ele] = 0
-        freq[ele] += 1
-    return freq, length
+        if ele not in freq_dict:
+            freq_dict[ele] = 0
+        freq_dict[ele] += 1
+    return freq_dict, length
 
 
 def get_unigram(summary):
@@ -108,7 +108,6 @@ def naive_bayes(movie, return_type, list_of_decade_features):
             else:
                 sum_log_likelihood += drichlet_prior
 
-
         # print(decade_value_pair)
         decade_value_pair.append((decade, sum_log_likelihood))
 
@@ -133,7 +132,9 @@ def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b
         movie_ones = dict.fromkeys( movie[1].iterkeys(), 1 )
         movieResult_ones = pm.MovieResult(movie.year, movie_ones, movie.total)
         number_of_films_per_decade[(movie.year-1930) / 10] += 1
-        pm.add_plot_counts(word_counts.setdefault(movieResult_ones.year, dict()), movieResult_ones.wordcounts)
+        pm.add_plot_counts(
+            word_counts.setdefault(movieResult_ones.year, dict()),
+            movieResult_ones.wordcounts)
     print(number_of_films_per_decade)
 
     decades = numpy.array([1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010])
@@ -146,7 +147,8 @@ def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b
 
     word_counts_probs = dict()
     for d2 in decades:
-        word_probs = {word: (float(count) / number_of_films_per_decade[(d2-1930)/10]) for (word, count) in word_counts.get(d2).iteritems()}
+        word_probs = {word: (float(count) / number_of_films_per_decade[(d2-1930)/10]) for
+                      (word, count) in word_counts.get(d2).iteritems()}
         word_counts_probs[d2] = word_counts_probs.setdefault(d2, word_probs)
 
         for decade_word_key in word_counts_probs.get(d2).keys():
@@ -157,10 +159,11 @@ def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b
     word_counts_iconicity_sorted_a = dict()
     word_counts_iconicity_sorted_b = dict()
     for d3 in decades:
-        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for (word, count) in word_counts_probs.get(d3).iteritems()}
+        word_iconicity = {word: (count / all_word_ever_probs.get(word)) for
+                          (word, count) in word_counts_probs.get(d3).iteritems()}
         iconicity_of_words[d3] = iconicity_of_words.setdefault(d3, word_iconicity)
 
-        iconicity_of_words_sorted = sorted(iconicity_of_words[d3].items(), key=lambda x:x[1], reverse=True)
+        iconicity_of_words_sorted = sorted(iconicity_of_words[d3].items(), key=lambda x: x[1], reverse=True)
         top_words_tuple = iconicity_of_words_sorted[:number_of_words_b]
         top_words_b = [w_b[0] for w_b in top_words_tuple]
         top_words_a = [w_a[0] for w_a in top_words_tuple[:number_of_words_a]]
@@ -193,12 +196,13 @@ def test_sklearn_nb(train, test):
 
 
 def split_list(full_list, ratio=TRAIN_TEST_RATIO):
-    print('splitting training/test movies (%d/1 = train/test ratio)' % ratio)
+    assert ratio > 0
+    print('splitting %d training/test movies (%d/1 train/test ratio)' % (len(full_list), ratio))
     return ([full_list[i] for i in range(len(full_list)) if i % ratio != 0],
             [full_list[i] for i in range(len(full_list)) if i % ratio == 0])
 
 
-def classify(test_movies, classifier):
+def predict_nb(test_movies, classifier):
     classification_results = rank_classification(test_movies, classifier)
     guess_number = [x[2] for x in classification_results]
     guesses_dict = dict((i, guess_number.count(i)) for i in guess_number)
@@ -251,8 +255,8 @@ def main():
 
     pnb.plot_2j(movies, list_of_decade_features)
 
-    print("starting classifier")
-    guesses_dict, classification_results = classify(test_movies, list_of_decade_features)
+    print("applying classifier")
+    guesses_dict, classification_results = predict_nb(test_movies, list_of_decade_features)
 
     print('plotting cumulative match curve')
     pnb.plot_2l(guesses_dict)
@@ -273,14 +277,12 @@ def main():
     remove_iconic_words(balanced_movies_q3, iconic_words_100)
 
     print("classifying movies without iconic words")
-    print('splitting training/test movies')
     training_movies_q3, test_movies_q3 = split_list(balanced_movies_q3)
-
-    print('getting all decade features from process plots')
+    print('getting all decade features from process plots (i.e., training classifier)')
     list_of_decade_features_q3 = pm.get_training_classifier(pm.get_movie_features(training_movies_q3))
 
-    print("starting classifier")
-    classify(test_movies_q3, list_of_decade_features_q3)
+    print("applying classifier")
+    predict_nb(test_movies_q3, list_of_decade_features_q3)
 
     print("END OF QUESTION 3")
     print("================================================")
