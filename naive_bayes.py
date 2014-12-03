@@ -144,7 +144,7 @@ def plot_movie_classification(movie_name, all_movies, list_of_decade_features):
     pyp.hist(decades, decades, weights=value, align='left')
     pyp.xticks(decades[:-1])
     pyp.ylim(value.min() - 100, value[:-1].max() + 100)
-    pyp.title('Prediction for movie "' + movie_name + '" across each decade (in log likelihood)')
+    pyp.title('Prediction for "' + movie_name + '" (actual decade ' + str(movie_to_classify['year']) + ')')
     pyp.xlabel("Decades")
     pyp.ylabel("Sum of log likelihood")
     pyp.savefig('Prediction_' + movie_name.replace(' ', '_') + ".png")
