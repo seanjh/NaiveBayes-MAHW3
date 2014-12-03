@@ -234,11 +234,11 @@ def get_decade_word_probs(movies, features, number_of_words_a, number_of_words_b
     return [word_counts_iconicity_sorted_a, word_counts_iconicity_sorted_b]
 
 
-def test_sklearn_nb(balanced):
-    movie_words = pp.process_plots_mp(balanced)
-
-    training_movies = [movie_words[i] for i in range(len(movie_words)) if i % 3 != 0]
-    test_movies = [movie_words[i] for i in range(len(movie_words)) if i % 3 == 0]
+def test_sklearn_nb(train, test):
+    #training_movies = [movie_words[i] for i in range(len(movie_words)) if i % 3 != 0]
+    #test_movies = [movie_words[i] for i in range(len(movie_words)) if i % 3 == 0]
+    training_movies = pp.process_plots_mp(train)
+    test_movies = pp.process_plots_mp(test)
 
     vec = DictVectorizer()
     training_features = vec.fit_transform([movie.wordcounts for movie in training_movies]).toarray()
@@ -256,8 +256,8 @@ def test_sklearn_nb(balanced):
     results = mnb_classifier.predict(test_features)
 
     correct = sum([1 for i, result in enumerate(results) if result == test_labels[i]])
-    print("skleanrn's MultinomialNB classifier predicted %d/%d correctly (%0.3f%% accuracy)" % (
-        correct, len(test_labels), correct / len(test_labels) * 100
+    print("sklearn's MultinomialNB classifier predicted %d/%d correctly (%0.3f%% accuracy)" % (
+        correct, len(test_labels), float(correct) / len(test_labels) * 100
     ))
 
 
@@ -392,35 +392,7 @@ def main():
     print("START OF QUESTION 4")
     print("classifying movies using sklearn")
 
-
-    #balanced_movies = balance_dataset(movies, BALANCE_NUM)
-    test_sklearn_nb(balanced_movies)
-
-    #v = CountVectorizer(decode_error='ignore')
-    #summary_list = numpy.array([movie_dict['summary'] for movie_dict in balanced_movies])
-    #year_list = numpy.array([movie_dict2['year'] for movie_dict2 in balanced_movies])
-    #summary_vectorized = v.fit_transform(summary_list).toarray()
-
-    #test_x = []
-    # train_x = []
-    # test_y = []
-    # train_y = []
-    #
-    # for i in range(0, len(summary_vectorized)):
-    #     if i % 3 == 0:
-    #         test_x.append(summary_vectorized[i])
-    #         test_y.append(year_list[i])
-    #     else:
-    #         train_x.append(summary_vectorized[i])
-    #         train_y.append(year_list[i])
-    # clf = MultinomialNB()
-    # clf.fit(train_x, train_y)
-    # pred_y = clf.predict(test_x)
-    #
-    # correct_num = (pred_y == test_y).sum()
-    # print("The SKLearn Naive-Bayes Classification correctly classifies %d out of %d (%0.3f%% accuracy)" % (
-    #     correct_num, len(test_y), float(correct_num) / len(test_y) * 100
-    # ))
+    test_sklearn_nb(training_movies, test_movies)
 
     print("END OF QUESTION 4")
     print("================================================")

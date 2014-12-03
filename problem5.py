@@ -33,7 +33,7 @@ def feature_extraction_sklearn(vectorizer, train, test):
 def feature_decomposition(transformer, train_features, test_features):
     LOGGER.info("Beginning Dimensionality reduction using truncated SVD (%d features)" % transformer.n_components)
     train_dfeatures = transformer.fit_transform(train_features)
-    LOGGER.debug(["%6f " % transformer.explained_variance_ratio_[i] for i in range(5)])
+    #LOGGER.debug(["%6f " % transformer.explained_variance_ratio_[i] for i in range(5)])
     LOGGER.debug("%0.4f%% of total variance in %d features\n" % (
         100 * transformer.explained_variance_ratio_.sum(), transformer.n_components))
     return train_dfeatures, transformer.transform(test_features)
@@ -128,7 +128,7 @@ def five_c(train_features, train_labels, test_features, test_labels):
 
 
 def five_f(train_features, train_labels, test_features, test_labels):
-    n_features = [1, 10, 100, 1000]
+    n_features = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
     accuracy = []
     # Classify with different feature subsets
     for num in n_features:
@@ -137,14 +137,15 @@ def five_f(train_features, train_labels, test_features, test_labels):
         d_train_feat, d_test_feat = rescale_features(d_train_feat, d_test_feat)
         results = classify(LogisticRegression(),
                            d_train_feat, train_labels, d_test_feat, test_labels,
-                           "Logistic Regression classification")
+                           "Logistic Regression classification - TSVD to %d features" % transformer.n_components)
         accuracy.append(get_correct_num(results, test_labels) / len(test_labels))
 
     # Classify with the full feature set
-    n_features.append(csr_matrix(train_features[-1]).toarray().size)
+    total_features = csr_matrix(train_features[-1]).toarray().size
+    n_features.append(total_features)
     results = classify(LogisticRegression(),
                        train_features, train_labels, test_features, test_labels,
-                       "Logistic Regression classification")
+                       "Logistic Regression classification - All %d features" % total_features)
     accuracy.append(get_correct_num(results, test_labels) / len(test_labels))
 
     LOGGER.debug(["%d: %.4f%%" % (n_features[i], accuracy[i] * 100) for i in range(len(n_features))])
@@ -154,8 +155,9 @@ def five_f(train_features, train_labels, test_features, test_labels):
 def plot_feature_decomposition(n_features, accuracy):
     plt.clf()
     plt.title("Accuracy as a Function of Feature Vector Size")
-    plt.plot(n_features, accuracy)
-    plt.xticks([10**i for i in range(4, -1, -1)])
+    plt.plot(n_features, accuracy, '-o', linewidth=2.0)
+    ax = plt.gca()
+    ax.set_xscale("log", nonposx='clip')
     plt.xlabel("# of Features")
     plt.ylabel("Model Accuracy")
     plt.savefig("dimensionalityAccuracy.png")
